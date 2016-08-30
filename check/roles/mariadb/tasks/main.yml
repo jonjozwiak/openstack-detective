@@ -1,0 +1,21 @@
+---
+
+
+# Have this check permissions for all mysql users... 
+# Obviously if they aren't here and the DB is on a different host than glance, the glance playbook won't be able to check and validate
+
+
+
+# Have some security checks here too? 
+# Like extra unneeded DBs?  
+# Or too wide open permissions?  
+
+
+#    - name: ensure anonymous users are not in the database
+#      mysql_user: name='' host={{ item }} state=absent
+#      with_items:
+#        - localhost
+#        - {{ inventory_hostname }}
+#
+#    - name: remove the test database
+#      mysql_db: name=test state=absent

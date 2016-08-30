@@ -1,0 +1,28 @@
+---
+# vi:syntax=yaml
+#result_dir: "{{inventory_dir}}/"
+result_dir: "/home/stack/"
+
+checks:
+    glance_api_running:
+        url: "none"
+        name: "openstack-glance-api is not running"
+    glance_registry_running:
+        url: "none"
+        name: "openstack-glance-registry is not running"
+    #glance_api_db_blank:
+    #    url: "none"
+    #    name: "/etc/glance/glance-api.conf has no 'connection' defined in the [database] section"
+    #glance_registry_db_blank:
+    #    url: "none"
+    #    name: "/etc/glance/glance-registry.conf has no 'connection' defined in the [database] section"
+    #glance_api_registry_db_mismatch:
+    #    url: "none"
+    #    name: "The 'connection' defined in the [database] section does not match in /etc/glance/glance-api.conf and /etc/glance/glance-registry.conf"
+    glance_db_connection: 
+        url: ""
+        name: "Connection to Glance DB Failed.  Check Login credentials in /etc/glance/glance-api.conf"
+    glance_db_empty: 
+        url: "none"
+        name: "Connection to Glance DB working, but the database has no tables.  Run 'glance-manage db_sync' to populate database"
+

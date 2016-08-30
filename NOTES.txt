@@ -1,0 +1,56 @@
+Troubleshooting Checks needed:  
+
+## TEST THIS AGAINST KOLLA - SOME THINGS LIKE SYSTEMCTL MAY HAVE TO CHANGE
+General
+* Check for NTP/Chronyd 
+* Validate time in sync across ALL nodes 
+* Check disk space on all nodes
+* Check log rotation on nodes?
+* A few common browbeat checks (https://github.com/openstack/browbeat/blob/master/ansible/check/roles/common/tasks/main.yml)
+** Verify selinux running
+** Check tuned running and correct profile 
+
+
+Per Service
+* Check packages installed 
+* Check services running 
+* Check configuration files - at least for basic things
+* Verify connection from string in config to DB
+** Verify DB has tables
+* Confirm user/pw auth thru keystone
+** Confirm endpoints?  
+** Confirm service?  
+* Test main list functionality (As shown below in basic functionality test)
+
+Pacemaker 
+  - Some help troubleshooting would be nice.  For instance, when I tried manually removing pacemaker remote all of a sudden my cluster crashed and wouldn't restart.  In this case, answers were in /var/log/messages 
+   Maybe Beekhof's troubleshooting could be automated: http://blog.clusterlabs.org/blog/2013/debugging-pacemaker
+  - Andrew Beekhof says 120s is the correct timeout for systemd based serviecs
+    - pcs resource update $RESOURCE op start timeout=60s op stop timeout=60s
+
+Heat stack troubleshooting - In particular, simplifying nested stack troubleshooting with Director... 
+
+Neutron
+* Add some capability to connection test a VM end to end
+** Make certain it is there correctly on all hops
+** Check for MTU mismatch 
+
+
+Glance 
+
+HA tests 
+* Check mysql data replication
+* verify amount of tables in DB is same on each node
+* Check galera envionment state
+* RabbitMQ availability 
+* RabbitMQ replication 
+* check pacemaker status
+
+Base Functional Tests / Smoke Test 
+* Run 'list' commands per service
+* Check that required services are running (and enabled via systemd or pacemaker) 
+* Functional tests (like cinder create/delete, glance image-create, download, etc)
+
+Add a config check for Ceph backend.  
+  -> Just to verify pools, auth, etc...
+

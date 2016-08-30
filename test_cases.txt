@@ -1,0 +1,23 @@
+Scenarios should be as follows: 
+* Test an all in one 
+* Test on fully distributed (maybe achieved via Kolla) 
+  - ie glance api not on same host as glance registry... 
+
+Glance Tests
+* mysql connection string has wrong user, host, password
+* keystone auth info incorrect 
+* Glance services not running 
+* Glance DB empty 
+* Glance DB user permissions issue 
+* Missing firewall rules for service connection 
+
+Glance Functional Tests: 
+   ( https://github.com/openstack/tempest/tree/master/tempest/api/image/v2 ) 
+* Test Create image
+* Test Update Image
+* Test List Images
+* Test Delete Image
+* Create, Verify, Delete Tag on Image 
+* metadef namespace testing? 
+* Test public vs private images?
+* Test image share accept / reject? 

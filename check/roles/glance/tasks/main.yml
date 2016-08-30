@@ -1,0 +1,151 @@
+---
+#
+# Checks for Glance Image Service 
+# 
+
+# Check for iptables rules
+
+# systemctl list-unit-files
+### Check for enabled if non-pacemaker.  Disabled if pacemaker?
+### That actually won't work with the *HA light* config
+
+- name: Check that glance-api is running 
+  shell: systemctl status openstack-glance-api
+  register: glance_api_running
+  failed_when: "'dead' in '{{ glance_api_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that glance-registry is running 
+  shell: systemctl status openstack-glance-registry
+  register: glance_registry_running
+  failed_when: "'dead' in '{{ glance_registry_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get glance-api DB connection string
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection 
+  register: glance_api_db
+  changed_when: no
+  ignore_errors: yes
+
+- name: Glance API DB string Blank
+  fail: msg="Glance API string is blank"
+  when: "'{{ glance_api_db.stdout }}' == ''"
+  register: glance_api_db_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get glance-registry DB connection string
+  shell: openstack-config --get /etc/glance/glance-registry.conf database connection 
+  register: glance_registry_db
+  changed_when: no
+  ignore_errors: yes
+
+- name: Glance Registry DB string Blank
+  fail: msg="Glance Registry string is blank"
+  when: "'{{ glance_registry_db.stdout }}' == ''"
+  register: glance_registry_db_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: API and Registry DB match 
+  fail: msg="Glance API and Registry DB entries do not match"
+  when: "'{{ glance_api_db.stdout }}' != '{{ glance_registry_db.stdout }}'"
+  register: glance_api_registry_db_mismatch
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance DB User
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/mysql:\/\///;s/:.*//'
+  register: glance_db_user
+  changed_when: no
+  ignore_errors: yes
+ 
+- name: Get Glance DB Password
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/@.*//;s/.*:.*://'
+  register: glance_db_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance DB Host
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/\/.*//'
+  register: glance_db_host
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance DB Name
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/.*\///'
+  register: glance_db_dbname
+  changed_when: no
+  ignore_errors: yes
+
+#user:      openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/mysql:\/\///;s/:.*//'
+#password:  openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/@.*//;s/.*:.*://'
+#host:      openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/\/.*//'
+#database:  openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/.*\///'
+
+- name: Check DB Connection
+  shell: mysql -e 'SHOW TABLES;' -D'{{ glance_db_dbname.stdout }}' -h'{{ glance_db_host.stdout }}' -u'{{ glance_db_user.stdout }}' -p'{{ glance_db_password.stdout }}'
+  register: glance_db_connection
+  failed_when: "{{ glance_db_connection.rc }} != 0" 
+  changed_when: no 
+  ignore_errors: yes
+
+- name: Check for empty DB
+  shell: mysql -e 'SHOW TABLES;' -D'{{ glance_db_dbname.stdout }}' -h'{{ glance_db_host.stdout }}' -u'{{ glance_db_user.stdout }}' -p'{{ glance_db_password.stdout }}'
+  register: glance_db_empty
+  when: "{{ glance_db_connection.rc }} == 0"
+  failed_when: "'{{ glance_db_empty.stdout }}' == ''"
+  changed_when: no
+  ignore_errors: yes
+
+# Check for necessary grants to access DB --> This should be done in mysql check?  If I don't have the grant, my connection will fail.... 
+### How to check this if glance isn't running on same host as mysql?  
+
+# Check for user setup in keystone 
+
+
+#[keystone_authtoken]
+#identity_uri=http://192.168.5.47:35357
+#admin_tenant_name=service
+#admin_user=glance
+#admin_password=MdjJb2h69cwsKHwRhvXXYxyWj
+#auth_uri=http://192.168.20.20:5000/v2.0
+
+### Could I just do an 'openstack token issue' with the glance variables set to validate the login????
+#export OS_USERNAME=glance;export OS_TENANT_NAME=service; export OS_AUTH_URL=http://192.168.20.20:5000/v2.0; export OS_PASSWORD=MdjJb2h69cwsKHwRhvXXYxyWj; openstack token issue
+### Will return code 1 with this error if fails: ERROR: openstack The request you have made requires authentication. (HTTP 401) (Request-ID: req-4b7fb9a9-c45a-403f-bf4d-6d1e0ce0736a)
+
+### Validate user exists 
+#openstack user show <user name> 	# Returns rc=1 if user doesn't exist
+### Validate services project exists 
+#openstack project show <project name>   # Returns rc=1 if it doesn't exist
+
+### Validate correct roles for service 
+#openstack user role list --project service glance
+  # should have _member_ and admin 
+
+### Test keystone authtoken settings 
+### Check endpoint exists 
+
+### Request auth token and image list 
+
+# check which default_store 
+### verify stores aligns with default_store
+# if file, check filesystem_store_datadir exists, has free space, has correct selinux context (if selinux is enabled), validate writing file as glance?
+# if rbd, validate rbd_store_ceph_conf exists, and user, pool... And validate it can auth and list the pool.  Maybe even validate space... 
+# if swift, ???
+# if anything else ignore
+
+### Any rabbitmq connection testing I need to do?  
+
+# Functional test???  openstack image create 
+
+# Search logs? 
+# /var/log/glance/api.log
+# /var/log/glance/registry.log
+#### Maybe better to search for specific errors... And then check if they occurred recently
+
+
+

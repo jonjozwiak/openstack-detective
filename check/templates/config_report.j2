@@ -1,0 +1,46 @@
+
+
+
+{% for host in groups['test'] %}
+---------------------------------------
+| Issues for host : {{ host }}
+---------------------------------------
+{% for check in hostvars[host]['checks'] %}
+{% if hostvars[host][check]['failed'] is defined %}
+{% if hostvars[host][check]['failed'] == true %}
+Check: {{ check }}
+Name: {{ hostvars[host]['checks'][check]['name'] }}
+URL: {{ hostvars[host]['checks'][check]['url'] }}
+
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+#{% for host in groups['controller'] %}
+#---------------------------------------
+#| Issues for host : {{ host }}
+#---------------------------------------
+#{% for check in hostvars[host]['checks'] %}
+#{% if hostvars[host][check]['failed'] == true %}
+#Bug: {{ check }}
+#Name: {{ hostvars[host]['checks'][check]['name'] }}
+#URL: {{ hostvars[host]['checks'][check]['url'] }}
+
+#{% endif %}
+#{% endfor %}
+#{% endfor %}
+
+#{% for host in groups['compute'] %}
+#---------------------------------------
+#| Issues for host : {{ host }}
+#---------------------------------------
+#{% for check in hostvars[host]['checks'] %}
+#{% if hostvars[host][check]['failed'] == true %}
+#Bug: {{ check }}
+#Name: {{ hostvars[host]['checks'][check]['name'] }}
+#URL: {{ hostvars[host]['checks'][check]['url'] }}
+#
+#{% endif %}
+#{% endfor %}
+#{% endfor %}
