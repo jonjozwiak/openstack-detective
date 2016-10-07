@@ -1,0 +1,111 @@
+
+# Get RabbitMQ variables 
+# user:         openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_userid
+# password:     openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_password
+# virtual host: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_virtual_host
+# host:         openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_host
+# hosts:        openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_hosts
+# port:         openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_port
+# ssl:          openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_use_ssl
+# ha_queues:    openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_ha_queues
+# exchange:     openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_ha_queues
+# topic:        openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_ha_queues
+
+- name: Get Rabbit User
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_userid
+  register: rabbit_userid
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Rabbit Password 
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_password
+  register: rabbit_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Rabbit Virtual Host
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_virtual_host
+  register: rabbit_virtual_host
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Rabbit Host
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_host
+  register: rabbit_host
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Rabbit Hosts
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_hosts
+  register: rabbit_hosts
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance Rabbit Port
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_port
+  register: rabbit_port
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance Rabbit SSL
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_use_ssl
+  register: glance_rabbit_use_ssl
+  changed_when: no
+  ignore_errors: yes
+
+#- name: Set rabbit ssl fact to true
+#  set_fact: 
+#    glance_rabbit_use_ssl: True
+#  changed_when: no
+#  when: "lower(glance_rabbit_use_ssl_output.stdout) == 'true'"
+#
+#- name: Set rabbit ssl fact to False
+#  set_fact:
+#    glance_rabbit_use_ssl: False
+#  changed_when: no
+#  when: "lower(glance_rabbit_use_ssl_output.stdout) != 'true'"
+
+- name: Write RabbitMQ check script 
+  copy: src=files/check_rabbitmq.py dest=/tmp/check_rabbitmq.py owner=root group=root mode=0755
+
+- name: Check Glance Rabbit userid string Blank
+  fail: msg="Glance rabbit_userid string is blank"
+  failed_when: "'{{ rabbit_userid.stdout }}' == ''"
+  register: glance_rabbit_user_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check Glance Rabbit password string Blank
+  fail: msg="Glance rabbit_password string is blank"
+  failed_when: "'{{ rabbit_password.stdout }}' == ''"
+  register: glance_rabbit_password_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check Glance Rabbit host and hosts string Blank
+  fail: msg="Glance rabbit_host and rabbit_hosts string is blank"
+  failed_when: "'{{ rabbit_host.stdout }}' == '' and '{{ rabbit_hosts.stdout }}' == ''"
+  register: glance_rabbit_hosts_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: RabbitMQ Connection Test for rabbit_hosts
+  shell: /tmp/check_rabbitmq.py --host {{ item.split(":")[0] | default(item) }} --port {{ item.split(":")[1] | default('5672') }} --user {{ rabbit_userid.stdout }} --password {{ rabbit_password.stdout }} --vhost {{ rabbit_virtual_host.stdout | default('/') }} --ssl {{ glance_rabbit_use_ssl.stdout | default('False') }}
+  when: "rabbit_hosts.stdout != ''"
+  #failed_when: "{{ glance_rabbit_hosts_connection.rc }} != 0"
+  register: glance_rabbit_hosts_connection
+  changed_when: no
+  ignore_errors: yes
+  with_items: "{{ rabbit_hosts.stdout.split(';') }}"
+
+- name: Check RabbitMQ Connection Test for rabbit_host
+  shell: /tmp/check_rabbitmq.py --host {{ rabbit_host.stdout }} --port {{ rabbit_port | default('5672') }} --user {{ rabbit_userid.stdout }} --password {{ rabbit_password.stdout }} --vhost {{ rabbit_virtual_host.stdout | default('/') }} --ssl {{ glance_rabbit_use_ssl.stdout | default('False') }}
+  when: "rabbit_host.stdout != '' and rabbit_hosts.stdout == ''"
+  #failed_when: "{{ glance_rabbit_host_connection.rc }} != 0"
+  register: glance_rabbit_host_connection
+  changed_when: no 
+  ignore_errors: yes
+
+#### If exists, you could test connectivity with this: 
+## rabbitmqadmin -H myserver -u user -p password list vhosts
+

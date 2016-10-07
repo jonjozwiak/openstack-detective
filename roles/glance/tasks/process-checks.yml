@@ -1,0 +1,18 @@
+# systemctl list-unit-files
+# ### Check for enabled if non-pacemaker.  Disabled if pacemaker?
+# ### That actually won't work with the *HA light* config
+
+- name: Check that glance-api is running
+  shell: systemctl status openstack-glance-api | head -5 
+  register: glance_api_running
+  failed_when: "'dead' in '{{ glance_api_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that glance-registry is running
+  shell: systemctl status openstack-glance-registry | head -5 
+  register: glance_registry_running
+  failed_when: "'dead' in '{{ glance_registry_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+

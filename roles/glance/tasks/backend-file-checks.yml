@@ -1,0 +1,14 @@
+# NOTE - Need to modify this validation to cover different versions (kilo, liberty, etc) as the configs are different
+
+# Get Glance File variables 
+# filesystem_store_datadir:   openstack-config --get /etc/glance/glance-api.conf glance_store filesystem_store_datadir
+
+- name: Get filesystem store directory
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store filesystem_store_datadir
+  register: glance_filesystem_store_datadir
+  changed_when: no
+  ignore_errors: yes
+
+# if file, check filesystem_store_datadir exists, has free space, has correct selinux context (if selinux is enabled), validate writing file as glance?
+#
+# Note - How to do this with NFS?  If it must exist on only one controller node?  

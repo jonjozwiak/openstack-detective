@@ -1,0 +1,81 @@
+- name: Get glance-api DB connection string
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection
+  register: glance_api_db
+  changed_when: no
+  ignore_errors: yes
+
+- name: Glance API DB string Blank
+  fail: msg="Glance API DB string is blank"
+  when: "'{{ glance_api_db.stdout }}' == ''"
+  register: glance_api_db_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get glance-registry DB connection string
+  shell: openstack-config --get /etc/glance/glance-registry.conf database connection
+  register: glance_registry_db
+  changed_when: no
+  ignore_errors: yes
+
+- name: Glance Registry DB string Blank
+  fail: msg="Glance Registry string is blank"
+  when: "'{{ glance_registry_db.stdout }}' == ''"
+  register: glance_registry_db_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: API and Registry DB match
+  fail: msg="Glance API and Registry DB entries do not match"
+  when: "'{{ glance_api_db.stdout }}' != '{{ glance_registry_db.stdout }}'"
+  register: glance_api_registry_db_mismatch
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance DB User
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/mysql+pymysql:\/\///;s/mysql:\/\///;s/:.*//'
+  register: glance_db_user
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance DB Password
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/@.*//;s/.*:.*://'
+  register: glance_db_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance DB Host
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/\/.*//'
+  register: glance_db_host
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Glance DB Name
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/.*\///'
+  register: glance_db_dbname
+  changed_when: no
+  ignore_errors: yes
+
+#user:      openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/mysql:\/\///;s/:.*//'
+#password:  openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/@.*//;s/.*:.*://'
+#host:      openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/\/.*//'
+#database:  openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/.*\///'
+
+- name: Check DB Connection
+  shell: mysql -e 'SHOW TABLES;' -D'{{ glance_db_dbname.stdout }}' -h'{{ glance_db_host.stdout }}' -u'{{ glance_db_user.stdout }}' -p'{{ glance_db_password.stdout }}'
+  register: glance_db_connection
+  failed_when: "{{ glance_db_connection.rc }} != 0" 
+  changed_when: no 
+  ignore_errors: yes
+
+- name: Check for empty DB
+  shell: mysql -e 'SHOW TABLES;' -D'{{ glance_db_dbname.stdout }}' -h'{{ glance_db_host.stdout }}' -u'{{ glance_db_user.stdout }}' -p'{{ glance_db_password.stdout }}'
+  register: glance_db_empty
+  when: "{{ glance_db_connection.rc }} == 0"
+  failed_when: "'{{ glance_db_empty.stdout }}' == ''"
+  changed_when: no
+  ignore_errors: yes
+
+# Check for necessary grants to access DB --> This should be done in mysql check?  If I don't have the grant, my connection will fail.... 
+# ### How to check this if glance isn't running on same host as mysql?  
+#
+#

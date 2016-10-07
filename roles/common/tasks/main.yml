@@ -1,0 +1,47 @@
+---
+#
+# Common Checks Across Components
+# 
+
+- name: Verify openstack-config command exists on OpenStack nodes
+  shell: rpm -qa | grep openstack-utils 
+  register: openstack_utils
+  changed_when: no
+  failed_when: "'openstack_utils' not in '{{ openstack_utils.stdout}}'"
+  when: 
+    - inventory_hostname in groups['controller'] 
+    - inventory_hostname in groups['compute'] 
+
+- name: Check that ntpd is running
+  shell: systemctl status ntpd | head -5
+  register: ntpd_running
+  changed_when: no
+  ignore_errors: yes
+  tags: 
+    - common
+
+- name: Check that chronyd is running
+  shell: systemctl status chronyd | head -5
+  register: chronyd_running
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - common
+
+- name: Report if neither ntpd or chronyd are running 
+  shell: cat /dev/null
+  failed_when: "'dead' in '{{ chronyd_running.stdout }}' and 'dead' in '{{ ntpd_running.stdout }}'"
+  register: chronyd_ntpd_running
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - common
+
+#
+# Check disk space / file system out of space
+#
+# Check CPU, RAM, Swap space usage? 
+#
+# Verify limits, kernel params
+#
+# Check log rotation?  Validate no logs are huge?

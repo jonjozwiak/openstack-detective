@@ -1,0 +1,27 @@
+- hosts: controller
+  name: Controller Checks
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  roles:
+    - common
+    - glance
+
+
+- hosts: localhost
+  gather_facts: True            # Needed for date/time in report
+  become: false
+  name: Generating config report
+  vars: 
+    - debug: false
+  tags: 
+    - report
+  tasks: 
+    - name: Dump host vars 
+      debug: var=hostvars[item]
+      with_items: "{{groups['all']}}"
+      when: debug == true
+
+    - local_action: template src=templates/config_report.j2 dest={{result_dir}}/config_report.log
+      become: false
+
+

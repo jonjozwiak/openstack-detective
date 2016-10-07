@@ -1,0 +1,60 @@
+---
+#
+# Checks for Glance Backends 
+# 
+
+- name: Find all configured stores 
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store stores
+  register: glance_stores
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - glance_backend
+
+- name: Find which backend is configured 
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store default_store
+  register: glance_default_store
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - glance_backend
+
+### Perform some Check to validate the default store is in the stores list 
+### Aslo some comparison needed?  For example: 
+# stores=glance.store.http.Store,glance.store.rbd.Store
+# But default_store = file or rbd... 
+#
+# Note - Check rhelosp7aio
+# If blank, it will default to filesystem_store_datadir=/var/lib/glance/images and default_store=file
+
+- name: Check Backend is supported
+  shell: cat /dev/null
+  register: glance_backend_supported
+  failed_when: "'{{ glance_default_store.stdout }}' not in ['file', 'rbd']"
+  changed_when: no 
+  ignore_errors: yes
+  tags: 
+    - glance_backend
+
+- name: Run File Backend Checks
+  include: backend-file-checks.yml
+  when: "'{{ glance_default_store.stdout }}' == 'file'"
+  tags:
+    - glance_backend
+
+- name: Run RBD Backend Checks
+  include: backend-rbd-checks.yml
+  when: "'{{ glance_default_store.stdout }}' == 'rbd'"
+  tags:
+    - glance_backend
+
+#- name: Run Glance Backend Checks
+#  include: backend-swift-checks.yml
+#  when: "{{ glance_default_store.stdout }} == 'swift'"
+#  tags:
+#    - glance_backend
+
+# ADD A CINDER BACKEND CHECK? 
+
+
+

@@ -1,0 +1,13 @@
+# Have this check for queue size? 
+# Have this check for the management api (15672) being enabled?
+# Have this check for / download rabbitmqadmin to /usr/local/bin
+#
+# # 
+# ### Any rabbitmq connection testing I need to do?  
+# #### I think I can test with: 
+# ## rabbitmqadmin -H myserver -u user -p password list vhosts
+# ##
+# ## I could also test with this: 
+# ## http://stackoverflow.com/questions/17148683/verify-rabbitmq-credentials-are-valid
+# #
+#

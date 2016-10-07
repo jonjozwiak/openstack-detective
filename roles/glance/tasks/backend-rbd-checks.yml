@@ -1,0 +1,66 @@
+# NOTE - Need to modify this validation to cover different versions (kilo, liberty, etc) as the configs are different
+
+# Get Glance RBD variables 
+# pool:             openstack-config --get /etc/glance/glance-api.conf glance_store rbd_store_pool
+# user:             openstack-config --get /etc/glance/glance-api.conf glance_store rdb_store_user
+# ceph_conf:        openstack-config --get /etc/glance/glance-api.conf glance_store rbd_store_ceph_conf
+# chunk_size:       openstack-config --get /etc/glance/glance-api.conf glance_store rbd_store_chunk_size
+# connect_timeout:  openstack-config --get /etc/glance/glance-api.conf glance_store rados_connect_timeout
+
+- name: Get RBD Pool
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store rbd_store_pool
+  register: glance_rbd_pool
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get RBD User
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store rbd_store_user
+  register: glance_rbd_user
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get RBD Ceph Conf
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store rbd_store_ceph_conf
+  register: glance_rbd_ceph_conf
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get RBD Chunk Size
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store rbd_store_chunk_size
+  register: glance_rbd_chunk_size
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get RBD Connect Timeout
+  shell: openstack-config --get /etc/glance/glance-api.conf glance_store rados_connect_timeout
+  register: glance_rados_connect_timeout
+  changed_when: no
+  ignore_errors: yes
+
+- name: Glance Ceph RBD Pool Blank
+  fail: msg="Glance rbd_store_pool is blank"
+  when: "'{{ glance_rbd_pool.stdout }}' == ''"
+  register: glance_rbd_pool_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Glance Ceph RBD User Blank
+  fail: msg="Glance rbd_store_user is blank"
+  when: "'{{ glance_rbd_user.stdout }}' == ''"
+  register: glance_rbd_pool_blank
+  changed_when: no
+  ignore_errors: yes
+
+# Is this really an issue?  Will it default to /etc/ceph/ceph.conf?
+- name: Glance Ceph RBD Ceph Conf Blank
+  fail: msg="Glance rbd_store_ceph_conf is blank"
+  when: "'{{ glance_rbd_ceph_conf.stdout }}' == ''"
+  register: glance_rbd_pool_blank
+  changed_when: no
+  ignore_errors: yes
+
+# Validate Ceph conf exists and is readable?
+
+#Validate Ceph can auth against this?  Maybe even validate free space? 
+### Can I do this without admin client?  Should I execute against a mon host? 
+### Should this validation be in a ceph playbook vs glance?

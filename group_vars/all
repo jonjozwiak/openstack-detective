@@ -1,0 +1,62 @@
+---
+# vi:syntax=yaml
+remote_user: "heat-admin"
+become: "True"
+result_dir: "{{inventory_dir}}/results"
+#result_dir: "/home/stack/"
+
+checks:
+    chronyd_ntpd_running:
+        url: ""
+        detail: "Both chronyd and ntp are not running.  Time may drift"
+    glance_api_running:
+        url: "none"
+        detail: "openstack-glance-api is not running"
+    glance_registry_running:
+        url: "none"
+        detail: "openstack-glance-registry is not running"
+    #glance_api_db_blank:
+    #    url: "none"
+    #    detail: "/etc/glance/glance-api.conf has no 'connection' defined in the [database] section"
+    #glance_registry_db_blank:
+    #    url: "none"
+    #    detail: "/etc/glance/glance-registry.conf has no 'connection' defined in the [database] section"
+    #glance_api_registry_db_mismatch:
+    #    url: "none"
+    #    detail: "The 'connection' defined in the [database] section does not match in /etc/glance/glance-api.conf and /etc/glance/glance-registry.conf"
+    glance_db_connection: 
+        url: ""
+        detail: "Connection to Glance DB Failed.  Check Login credentials in /etc/glance/glance-api.conf"
+    glance_db_empty: 
+        url: "none"
+        detail: "Connection to Glance DB working, but the database has no tables.  Run 'glance-manage db_sync' to populate database"
+    glance_rabbit_user_blank:
+        url: ""
+        detail: "There is no rabbitmq_userid specified in /etc/glance/glance-api.conf"
+    glance_rabbit_password_blank:
+        url: ""
+        detail: "There is no rabbit_password specified in /etc/glance/glance-api.conf"
+    glance_rabbit_hosts_blank:
+        url: ""
+        detail: "Both rabbit_host and rabbit_hosts are blank.  Check /etc/glance/glance-api.conf"
+    glance_rabbit_hosts_connection:
+        url: ""
+        detail: "Glance - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/glance/glance-api.conf for rabbit_hosts, rabbit_userid, and rabbit_password"
+    glance_rabbit_host_connection:
+        url: ""
+        detail: "Glance - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/glance/glance-api.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
+    glance_api_keystone_token_get:
+        url: ""
+        detail: "Glance API authentication to keystone failed.  Check /etc/glance/glance-api.conf and keystone"
+    glance_registry_keystone_token_get:
+        url: ""
+        detail: "Glance Registry authentication to keystone failed.  Check /etc/glance/glance-registry.conf and keystone"
+    glance_keystone_endpoint:
+        url: ""
+        detail: "Glance endpoint not found in Keystone.  This may be due to keystone auth failing or may be the endpoint was never created."
+    glance_keystone_endpoint_response:
+        url: ""
+        detail: "Glance endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
+    glance_backend_supported:
+        url: ""
+        details: "The default store defined in /etc/glance/glance-api.conf is not setup for checking with this script or is invalid."

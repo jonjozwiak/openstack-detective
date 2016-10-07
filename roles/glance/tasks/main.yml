@@ -1,0 +1,42 @@
+---
+#
+# Checks for Glance Image Service 
+# 
+
+# Check for iptables rules
+
+- name: Run Glance process checks
+  include: process-checks.yml
+  tags:
+    - process
+
+- name: Run Glance Database Checks
+  include: db-checks.yml
+  tags: 
+    - db
+
+- name: Run Glance RabbitMQ Checks
+  include: rabbitmq-checks.yml
+  tags:
+    - rabbitmq
+
+- name: Run Glance Keystone Checks
+  include: keystone-checks.yml
+  tags:
+    - keystoneauth
+
+- name: Run Glance Backend Checks
+  include: backend.yml
+  tags:
+    - glance_backend
+
+# Functional test???  Glance image-list?  openstack image create ?
+
+# Search logs? 
+# /var/log/glance/api.log
+# /var/log/glance/registry.log
+### Maybe better to search for specific errors... And then check if they occurred recently
+### Performance impact if very large logs? 
+
+
+
