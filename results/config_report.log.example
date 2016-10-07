@@ -1,0 +1,19 @@
+---------------------------------------
+| Report Date: 2016-10-07 10:02:57
+---------------------------------------
+
+---------------------------------------
+| Checks for host : 192.168.220.78
+---------------------------------------
+OK: glance_db_connection passed
+OK: glance_registry_running passed
+OK: glance_db_empty passed
+OK: glance_api_running passed
+OK: glance_rabbit_user_blank passed
+OK: glance_rabbit_password_blank passed
+OK: glance_keystone_endpoint passed
+OK: chronyd_ntpd_running passed
+OK: glance_keystone_endpoint_response passed
+OK: glance_backend_supported passed
+OK: glance_rabbit_hosts_blank passed
+
