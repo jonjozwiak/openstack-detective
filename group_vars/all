@@ -6,24 +6,17 @@ result_dir: "{{inventory_dir}}/results"
 #result_dir: "/home/stack/"
 
 checks:
+    #### COMMON ####
     chronyd_ntpd_running:
         url: ""
         detail: "Both chronyd and ntp are not running.  Time may drift"
+    #### GLANCE ####
     glance_api_running:
         url: "none"
         detail: "openstack-glance-api is not running"
     glance_registry_running:
         url: "none"
         detail: "openstack-glance-registry is not running"
-    #glance_api_db_blank:
-    #    url: "none"
-    #    detail: "/etc/glance/glance-api.conf has no 'connection' defined in the [database] section"
-    #glance_registry_db_blank:
-    #    url: "none"
-    #    detail: "/etc/glance/glance-registry.conf has no 'connection' defined in the [database] section"
-    #glance_api_registry_db_mismatch:
-    #    url: "none"
-    #    detail: "The 'connection' defined in the [database] section does not match in /etc/glance/glance-api.conf and /etc/glance/glance-registry.conf"
     glance_db_connection: 
         url: ""
         detail: "Connection to Glance DB Failed.  Check Login credentials in /etc/glance/glance-api.conf"
@@ -60,3 +53,50 @@ checks:
     glance_backend_supported:
         url: ""
         details: "The default store defined in /etc/glance/glance-api.conf is not setup for checking with this script or is invalid."
+    #### NOVA CONTROLLER ####
+    nova_api_running:
+        url: "none"
+        detail: "openstack-nova-api is not running"
+    nova_scheduler_running:
+        url: "none"
+        detail: "openstack-nova-scheduler is not running"
+    nova_conductor_running:
+        url: "none"
+        detail: "openstack-nova-conductor is not running"
+    nova_novncproxy_running:
+        url: "none"
+        detail: "openstack-nova-novncproxy is not running"
+    nova_consoleauth_running:
+        url: "none"
+        detail: "openstack-nova-consoleauth is not running"
+    nova_db_connection:
+        url: ""
+        detail: "Connection to Nova DB Failed.  Check Login credentials in /etc/nova/nova.conf"
+    nova_db_empty:
+        url: "none"
+        detail: "Connection to Nova DB working, but the database has no tables.  Run 'nova-manage db sync' to populate database"
+    nova_rabbit_user_blank:
+        url: ""
+        detail: "There is no rabbitmq_userid specified in /etc/nova/nova.conf"
+    nova_rabbit_password_blank:
+        url: ""
+        detail: "There is no rabbit_password specified in /etc/nova/nova.conf"
+    nova_rabbit_hosts_blank:
+        url: ""
+        detail: "Both rabbit_host and rabbit_hosts are blank.  Check /etc/nova/nova.conf"
+    nova_rabbit_hosts_connection:
+        url: ""
+        detail: "Nova - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/nova/nova.conf for rabbit_hosts, rabbit_userid, and rabbit_password"
+    nova_rabbit_host_connection:
+        url: ""
+        detail: "Nova - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/nova/nova.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
+    nova_keystone_token_get:
+        url: ""
+        detail: "Nova authentication to keystone failed.  Check /etc/nova/nova.conf and keystone"
+    nova_keystone_endpoint:
+        url: ""
+        detail: "Nova endpoint not found in Keystone.  This may be due to keystone auth failing or may be the endpoint was never created."
+    nova_keystone_endpoint_response:
+        url: ""
+        detail: "Nova endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
+

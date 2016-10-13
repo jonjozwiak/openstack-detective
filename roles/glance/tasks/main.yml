@@ -9,26 +9,35 @@
   include: process-checks.yml
   tags:
     - process
+    - glance-process
+    - glance
 
 - name: Run Glance Database Checks
   include: db-checks.yml
   tags: 
     - db
+    - glance-db
+    - glance
 
 - name: Run Glance RabbitMQ Checks
   include: rabbitmq-checks.yml
   tags:
     - rabbitmq
+    - glance-rabbitmq
+    - glance
 
 - name: Run Glance Keystone Checks
   include: keystone-checks.yml
   tags:
     - keystoneauth
+    - glance-keystoneauth
+    - glance
 
 - name: Run Glance Backend Checks
   include: backend.yml
   tags:
     - glance_backend
+    - glance
 
 # Functional test???  Glance image-list?  openstack image create ?
 

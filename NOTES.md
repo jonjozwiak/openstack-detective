@@ -155,6 +155,8 @@ Thoughts of this...
     * DB not on same nodes as APIs
     * RabbitMQ not on same nodes as APIs
 
+Nova compute error message:
+libvirtError: invalid argument: could not find capabilities for domaintype=kvm
 
 == Longer term
 * Test against Kolla - Some things like systemctl may have to change

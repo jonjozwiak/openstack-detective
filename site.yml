@@ -5,6 +5,7 @@
   roles:
     - common
     - glance
+    - nova-controller
 
 
 - hosts: localhost
