@@ -102,6 +102,12 @@ controller_checks:
     nova_keystone_endpoint_response:
         url: ""
         detail: "Nova endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
+    nova_neutron_token_issue:
+        url: ""
+        detail: "Nova cannot get a keystone token with Neutron credentials defined in /etc/nova/nova.conf"
+    nova_neutron_keystone_endpoint_response:
+        url: ""
+        detail: "Nova has neutron's endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
     #### Neutron ####
     neutron_server_running:
         url: "none"

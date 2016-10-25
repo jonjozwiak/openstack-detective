@@ -26,6 +26,14 @@
     - nova-compute-libvirt
     - nova-compute
 
+- name: Run Nova Neutron Checks
+  include: neutron-checks.yml
+  tags:
+    - nova-neutron-keystoneauth
+    - nova-compute-neutron-keystoneauth
+    - nova-compute
+
+
 # Add check for neutron auth based on /etc/nova/nova.conf neutron section
 
 # Add check for VNC server setup (both controller and compute settings) 

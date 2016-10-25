@@ -33,6 +33,13 @@
     - nova-controller-keystoneauth
     - nova-controller
 
+- name: Run Nova Neutron Checks
+  include: neutron-checks.yml
+  tags:
+    - nova-neutron-keystoneauth
+    - nova-controller-neutron-keystoneauth
+    - nova-controller
+
 # Functional test???  nova boot?  
 
 # Search logs? 

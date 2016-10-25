@@ -59,7 +59,7 @@
 
 - name: Check neutron-server keystone token get 
   shell: openstack --os-username={{neutron_server_keystone_username.stdout}} --os-password={{neutron_server_keystone_password.stdout}} --os-project-name={{neutron_server_keystone_project_name.stdout}} --os-auth-url={{neutron_server_keystone_auth_uri.stdout}} token issue
-  register: neutron_server_token_issue
+  register: neutron_server_keystone_token_issue
   changed_when: no
   ignore_errors: yes
 

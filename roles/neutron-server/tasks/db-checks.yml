@@ -30,7 +30,7 @@
   ignore_errors: yes
 
 - name: Get neutron DB Name
-  shell: openstack-config --get /etc/neutron/neutron.conf database connection | sed 's/.*@//;s/.*\///'
+  shell: openstack-config --get /etc/neutron/neutron.conf database connection | sed 's/.*@//;s/.*\///' | awk -F "?" '{print $1}'
   register: neutron_db_dbname
   changed_when: no
   ignore_errors: yes

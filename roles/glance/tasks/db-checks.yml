@@ -50,7 +50,7 @@
   ignore_errors: yes
 
 - name: Get Glance DB Name
-  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/.*\///'
+  shell: openstack-config --get /etc/glance/glance-api.conf database connection | sed 's/.*@//;s/.*\///' | awk -F "?" '{print $1}'
   register: glance_db_dbname
   changed_when: no
   ignore_errors: yes

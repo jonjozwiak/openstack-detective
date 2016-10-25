@@ -1,0 +1,152 @@
+# Check for neutron keystone and user configured in nova.conf
+
+# Get Nova's Neutron variables 
+# username:        openstack-config --get /etc/nova/nova.conf neutron admin_username
+# password:    openstack-config --get /etc/nova/nova.conf neutron admin_password
+# project_name: openstack-config --get /etc/nova/nova.conf neutron project_name
+#    Used to be admin_tenant_name in OSP 8
+# auth_url:          openstack-config --get /etc/nova/nova.conf neutron auth_url
+   # or admin_auth_url in old OSP 8
+
+- name: Get Nova's neutron Keystone User
+  shell: openstack-config --get /etc/nova/nova.conf neutron username
+  register: nova_neutron_keystone_username
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova's neutron Keystone admin User
+  shell: openstack-config --get /etc/nova/nova.conf neutron admin_username
+  register: nova_neutron_keystone_admin_username
+  changed_when: no
+  ignore_errors: yes
+
+- name: Set user to username when username is defined
+  set_fact:
+    nova_neutron_keystone_user: '{{ nova_neutron_keystone_username.stdout }}'
+  when: "nova_neutron_keystone_username is defined"
+
+- name: Set user to admin_username when username not defined (Legacy)
+  set_fact:
+    nova_neutron_keystone_user: '{{ nova_neutron_keystone_admin_username.stdout }}'
+  when: "(nova_neutron_keystone_username is not defined or '{{nova_neutron_keystone_username.stdout}}' == '') and '{{nova_neutron_keystone_admin_username.stdout}}' != ''"
+
+- name: Get Nova's neutron Keystone Password
+  shell: openstack-config --get /etc/nova/nova.conf neutron password
+  register: nova_neutron_keystone_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova's neutron Keystone admin Password
+  shell: openstack-config --get /etc/nova/nova.conf neutron admin_password
+  register: nova_neutron_keystone_admin_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Set pass to password when password is defined
+  set_fact:
+    nova_neutron_keystone_pass: '{{ nova_neutron_keystone_password.stdout }}'
+  when: "nova_neutron_keystone_password is defined"
+
+- name: Set pass to admin_password when password not defined (Legacy)
+  set_fact:
+    nova_neutron_keystone_pass: '{{ nova_neutron_keystone_admin_password.stdout }}'
+  when: "(nova_neutron_keystone_password is not defined or '{{nova_neutron_keystone_password.stdout}}' == '') and '{{nova_neutron_keystone_admin_password.stdout}}' != ''"
+
+
+- name: Get Nova's neutron Keystone project name
+  shell: openstack-config --get /etc/nova/nova.conf neutron project_name
+  register: nova_neutron_keystone_project_name
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova's neutron Keystone admin tenant name (Legacy)
+  shell: openstack-config --get /etc/nova/nova.conf neutron admin_tenant_name
+  register: nova_neutron_keystone_admin_tenant_name
+  changed_when: no
+  ignore_errors: yes
+
+- name: Set project to project_name when project name is defined
+  set_fact:
+    nova_neutron_keystone_project: '{{ nova_neutron_keystone_project_name.stdout }}'
+  when: "nova_neutron_keystone_project_name is defined"
+
+- name: Set project to admin_tenant_name when project name not defined 
+  set_fact: 
+    nova_neutron_keystone_project: '{{ nova_neutron_keystone_admin_tenant_name.stdout }}'
+  when: "(nova_neutron_keystone_project_name is not defined or '{{nova_neutron_keystone_project_name.stdout}}' == '') and '{{nova_neutron_keystone_admin_tenant_name.stdout}}' != ''"
+
+- name: Get Nova's neutron Keystone auth_url
+  shell: openstack-config --get /etc/nova/nova.conf neutron auth_url
+  register: nova_neutron_keystone_auth_url
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova's neutron Keystone admin_auth_url (Legacy)
+  shell: openstack-config --get /etc/nova/nova.conf neutron admin_auth_url
+  register: nova_neutron_keystone_admin_auth_url
+  changed_when: no
+  ignore_errors: yes
+
+- name: Set auth_url to project url when defined
+  set_fact:
+    nova_neutron_keystone_url: '{{ nova_neutron_keystone_auth_url.stdout }}'
+  when: "nova_neutron_keystone_auth_url is defined"
+
+- name: Set auth_url to admin_auth_url when auth_url not defined
+  set_fact:
+    nova_neutron_keystone_url: '{{ nova_neutron_keystone_admin_auth_url.stdout }}'
+  when: "(nova_neutron_keystone_auth_url is not defined or '{{nova_neutron_keystone_auth_url.stdout}}' == '') and '{{nova_neutron_keystone_admin_auth_url.stdout}}' != ''"
+
+- name: Set keystone version v3
+  set_fact: 
+    neutron_keystone_ver: '--os-identity-api-version 3'
+  when: "'v3' in '{{ nova_neutron_keystone_url }}'"
+
+- name: Set keystone version v2
+  set_fact:
+    neutron_keystone_ver: ''
+  when: "'v3' not in '{{ nova_neutron_keystone_url }}'"
+
+
+- name: Check Nova's neutron keystone token get 
+  shell: openstack --os-username={{nova_neutron_keystone_user}} --os-password={{nova_neutron_keystone_pass}} --os-project-name={{nova_neutron_keystone_project}} --os-auth-url={{nova_neutron_keystone_url}} {{ neutron_keystone_ver }} token issue
+  register: nova_neutron_token_issue
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova's neutron keystone endpoint v2
+  shell: openstack --os-username={{nova_neutron_keystone_user}} --os-password={{nova_neutron_keystone_pass}} --os-project-name={{nova_neutron_keystone_project}} --os-auth-url={{nova_neutron_keystone_url}} {{ neutron_keystone_ver }} endpoint show neutron | grep internal | awk '{print $4}' 
+  register: nova_neutron_keystone_endpoint_v2
+  when: "'v3' not in '{{ nova_neutron_keystone_url }}'"
+  failed_when: "{{ nova_neutron_keystone_endpoint_v2.rc }} != 0"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova's neutron keystone endpoint v3
+  shell: openstack --os-username={{nova_neutron_keystone_user}} --os-password={{nova_neutron_keystone_pass}} --os-project-name={{nova_neutron_keystone_project}} --os-auth-url={{nova_neutron_keystone_url}} {{ neutron_keystone_ver }} endpoint list | grep neutron | grep internal | awk '{print $14}'
+  register: nova_neutron_keystone_endpoint_v3
+  when: "'v3' in '{{ nova_neutron_keystone_url }}'"
+  failed_when: "{{ nova_neutron_keystone_endpoint_v3.rc }} != 0"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get keystone endpoint based on v2 
+  set_fact:
+    nova_neutron_keystone_endpoint: '{{nova_neutron_keystone_endpoint_v2.stdout}}'
+  when: "'v3' not in '{{ nova_neutron_keystone_url }}'"
+  
+- name: Get keystone endpoint based on v3
+  set_fact:
+    nova_neutron_keystone_endpoint: '{{nova_neutron_keystone_endpoint_v3.stdout}}'
+  when: "'v3' in '{{ nova_neutron_keystone_url }}'"
+
+
+- debug: msg="neutron url is {{nova_neutron_keystone_url}}"
+- debug: msg="neutron endpoint is {{nova_neutron_keystone_endpoint}}"
+
+- name: Check Nova's neutron keystone endpoint 
+  shell: curl -k {{ nova_neutron_keystone_endpoint }}
+  register: nova_neutron_keystone_endpoint_response
+  failed_when: "{{ nova_neutron_keystone_endpoint_response.rc  }} != 0"
+  changed_when: no
+  ignore_errors: yes
