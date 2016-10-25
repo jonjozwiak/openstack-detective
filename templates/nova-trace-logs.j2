@@ -1,0 +1,10 @@
+{% for host in groups['all'] %}
+{% if hostvars[host]["instance_logs"] is defined %}
+{% for logoutput in hostvars[host]["instance_logs"].results %}
+{% for logoutputline in logoutput.stdout_lines %}
+{{ logoutputline }} (LOG SOURCE={{ host }}:{{ logoutput.item }})
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
