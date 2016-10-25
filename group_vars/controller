@@ -41,10 +41,10 @@ controller_checks:
     glance_rabbit_host_connection:
         url: ""
         detail: "Glance - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/glance/glance-api.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
-    glance_api_keystone_token_get:
+    glance_api_keystone_token_issue:
         url: ""
         detail: "Glance API authentication to keystone failed.  Check /etc/glance/glance-api.conf and keystone"
-    glance_registry_keystone_token_get:
+    glance_registry_keystone_token_issue:
         url: ""
         detail: "Glance Registry authentication to keystone failed.  Check /etc/glance/glance-registry.conf and keystone"
     glance_keystone_endpoint:
@@ -93,7 +93,7 @@ controller_checks:
     nova_rabbit_host_connection:
         url: ""
         detail: "Nova - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/nova/nova.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
-    nova_keystone_token_get:
+    nova_keystone_token_issue:
         url: ""
         detail: "Nova authentication to keystone failed.  Check /etc/nova/nova.conf and keystone"
     nova_keystone_endpoint:
@@ -139,7 +139,7 @@ controller_checks:
     neutron_rabbit_host_connection:
         url: ""
         detail: "neutron - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/neutron/neutron.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
-    neutron_server_keystone_token_get:
+    neutron_server_keystone_token_issue:
         url: ""
         detail: "neutron API authentication to keystone failed.  Check /etc/neutron/neutron.conf and keystone"
     neutron_keystone_endpoint:

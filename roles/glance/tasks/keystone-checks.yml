@@ -1,33 +1,56 @@
 # Check for user setup in keystone 
 
 # Get Glance Keystone variables 
+# For Newton and later:
+# username:        openstack-config --get /etc/glance/glance-api.conf keystone_authtoken username
+# password:    openstack-config --get /etc/glance/glance-api.conf keystone_authtoken password
+# project_name: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken project_name
+# For earlier releases:
 # admin_user:        openstack-config --get /etc/glance/glance-api.conf keystone_authtoken admin_user
 # admin_password:    openstack-config --get /etc/glance/glance-api.conf keystone_authtoken admin_password
 # admin_tenant_name: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken admin_tenant_name
 # auth_uri:          openstack-config --get /etc/glance/glance-api.conf keystone_authtoken auth_uri
 # identity_uri:      openstack-config --get /etc/glance/glance-api.conf keystone_authtoken identity_uri
+# For Newton and later:
+# username:        openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken username
+# password:    openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken password
+# project_name: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken project_name
+# For earlier releases:
 # admin_user:        openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken admin_user
 # admin_password:    openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken admin_password
 # admin_tenant_name: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken admin_tenant_name
 # auth_uri:          openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken auth_uri
 # identity_uri:      openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken identity_uri
 
+- name: Set Legacy keystone values
+  set_fact:
+    username: 'admin_user'
+    password: 'admin_password'
+    project_name: 'admin_tenant_name'
+  when: openstack_release in openstack_legacy_releases
+
+- name: Set keystone values
+  set_fact:
+    username: 'username'
+    password: 'password'
+    project_name: 'project_name'
+  when: openstack_release not in openstack_legacy_releases
 
 - name: Get Glance API Keystone admin User
-  shell: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken admin_user
-  register: glance_api_keystone_admin_user
+  shell: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken {{ username }}
+  register: glance_api_keystone_username
   changed_when: no
   ignore_errors: yes
 
 - name: Get Glance API Keystone admin Password
-  shell: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken admin_password
-  register: glance_api_keystone_admin_password
+  shell: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken {{ password }}
+  register: glance_api_keystone_password
   changed_when: no
   ignore_errors: yes
 
 - name: Get Glance API Keystone admin Tenant
-  shell: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken admin_tenant_name
-  register: glance_api_keystone_admin_tenant_name
+  shell: openstack-config --get /etc/glance/glance-api.conf keystone_authtoken {{ project_name }}
+  register: glance_api_keystone_project_name
   changed_when: no
   ignore_errors: yes
 
@@ -44,20 +67,20 @@
   ignore_errors: yes
 
 - name: Get Glance Registry Keystone admin User
-  shell: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken admin_user
-  register: glance_registry_keystone_admin_user
+  shell: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken {{ username }}
+  register: glance_registry_keystone_username
   changed_when: no
   ignore_errors: yes
 
 - name: Get Glance Registry Keystone admin Password
-  shell: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken admin_password
-  register: glance_registry_keystone_admin_password
+  shell: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken {{ password }}
+  register: glance_registry_keystone_password
   changed_when: no
   ignore_errors: yes
 
 - name: Get Glance Registry Keystone admin Tenant
-  shell: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken admin_tenant_name
-  register: glance_registry_keystone_admin_tenant_name
+  shell: openstack-config --get /etc/glance/glance-registry.conf keystone_authtoken {{ project_name }}
+  register: glance_registry_keystone_project_name
   changed_when: no
   ignore_errors: yes
 
@@ -74,19 +97,19 @@
   ignore_errors: yes
 
 - name: Check glance-api keystone token get 
-  shell: export OS_USERNAME={{glance_api_keystone_admin_user.stdout}};export OS_PASSWORD={{glance_api_keystone_admin_password.stdout}};export OS_TENANT_NAME={{glance_api_keystone_admin_tenant_name.stdout}}; export OS_AUTH_URL={{glance_api_keystone_auth_uri.stdout}}; keystone token-get
-  register: glance_api_keystone_token_get
+  shell: openstack --os-username={{glance_api_keystone_username.stdout}} --os-password={{glance_api_keystone_password.stdout}} --os-project-name={{glance_api_keystone_project_name.stdout}} --os-auth-url={{glance_api_keystone_auth_uri.stdout}} token issue
+  register: glance_api_keystone_token_issue
   changed_when: no
   ignore_errors: yes
 
 - name: Check glance-registry keystone token get
-  shell: export OS_USERNAME={{glance_registry_keystone_admin_user.stdout}};export OS_PASSWORD={{glance_registry_keystone_admin_password.stdout}};export OS_TENANT_NAME={{glance_registry_keystone_admin_tenant_name.stdout}}; export OS_AUTH_URL={{glance_registry_keystone_auth_uri.stdout}}; keystone token-get
-  register: glance_registry_keystone_token_get
+  shell: openstack --os-username={{glance_registry_keystone_username.stdout}} --os-password={{glance_registry_keystone_password.stdout}} --os-project-name={{glance_registry_keystone_project_name.stdout}} --os-auth-url={{glance_registry_keystone_auth_uri.stdout}} token issue
+  register: glance_registry_keystone_token_issue
   changed_when: no
   ignore_errors: yes
 
 - name: Get Glance keystone endpoint 
-  shell: export OS_USERNAME={{glance_registry_keystone_admin_user.stdout}};export OS_PASSWORD={{glance_registry_keystone_admin_password.stdout}};export OS_TENANT_NAME={{glance_registry_keystone_admin_tenant_name.stdout}}; export OS_AUTH_URL={{glance_registry_keystone_auth_uri.stdout}}; keystone endpoint-get --service image | grep public | awk '{print $4}'
+  shell: openstack --os-username={{glance_registry_keystone_username.stdout}} --os-password={{glance_registry_keystone_password.stdout}} --os-project-name={{glance_registry_keystone_project_name.stdout}} --os-auth-url={{glance_registry_keystone_auth_uri.stdout}} endpoint show image | grep public | awk '{print $4}'
   register: glance_keystone_endpoint
   failed_when: "{{ glance_keystone_endpoint.rc }} != 0"
   changed_when: no

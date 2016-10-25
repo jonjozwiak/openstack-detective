@@ -1,28 +1,46 @@
 # Check for user setup in keystone 
 
 # Get Nova Keystone variables 
+# For Newton and newer
 # admin_user:        openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_user
 # admin_password:    openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_password
 # admin_tenant_name: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_tenant_name
+# For Earlier releases
+# username:        openstack-config --get /etc/nova/nova.conf keystone_authtoken username
+# password:    openstack-config --get /etc/nova/nova.conf keystone_authtoken password
+# project_name: openstack-config --get /etc/nova/nova.conf keystone_authtoken project_name
 # auth_uri:          openstack-config --get /etc/nova/nova.conf keystone_authtoken auth_uri
 # identity_uri:      openstack-config --get /etc/nova/nova.conf keystone_authtoken identity_uri
 
+- name: Set Legacy keystone values
+  set_fact:
+    username: 'admin_user'
+    password: 'admin_password'
+    project_name: 'admin_tenant_name'
+  when: openstack_release in openstack_legacy_releases
+
+- name: Set keystone values
+  set_fact:
+    username: 'username'
+    password: 'password'
+    project_name: 'project_name'
+  when: openstack_release not in openstack_legacy_releases
 
 - name: Get Nova Keystone admin User
-  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_user
-  register: nova_keystone_admin_user
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken {{ username }}
+  register: nova_keystone_username
   changed_when: no
   ignore_errors: yes
 
 - name: Get Nova Keystone admin Password
-  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_password
-  register: nova_keystone_admin_password
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken {{ password }}
+  register: nova_keystone_password
   changed_when: no
   ignore_errors: yes
 
 - name: Get Nova Keystone admin Tenant
-  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_tenant_name
-  register: nova_keystone_admin_tenant_name
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken {{ project_name }}
+  register: nova_keystone_project_name
   changed_when: no
   ignore_errors: yes
 
@@ -39,20 +57,20 @@
   ignore_errors: yes
 
 - name: Check nova keystone token get 
-  shell: export OS_USERNAME={{nova_keystone_admin_user.stdout}};export OS_PASSWORD={{nova_keystone_admin_password.stdout}};export OS_TENANT_NAME={{nova_keystone_admin_tenant_name.stdout}}; export OS_AUTH_URL={{nova_keystone_auth_uri.stdout}}; keystone token-get
-  register: nova_keystone_token_get
+  shell: openstack --os-username={{nova_keystone_username.stdout}} --os-password={{nova_keystone_password.stdout}} --os-project-name={{nova_keystone_project_name.stdout}} --os-auth-url={{nova_keystone_auth_uri.stdout}} token issue
+  register: nova_keystone_token_issue
   changed_when: no
   ignore_errors: yes
 
 - name: Get Nova keystone endpoint 
-  shell: export OS_USERNAME={{nova_keystone_admin_user.stdout}};export OS_PASSWORD={{nova_keystone_admin_password.stdout}};export OS_TENANT_NAME={{nova_keystone_admin_tenant_name.stdout}}; export OS_AUTH_URL={{nova_keystone_auth_uri.stdout}}; keystone endpoint-get --service compute | grep public | awk '{print $4}'
+  shell: openstack --os-username={{nova_keystone_username.stdout}} --os-password={{nova_keystone_password.stdout}} --os-project-name={{nova_keystone_project_name.stdout}} --os-auth-url={{nova_keystone_auth_uri.stdout}} endpoint show compute -c publicurl --format value
   register: nova_keystone_endpoint
   failed_when: "{{ nova_keystone_endpoint.rc }} != 0"
   changed_when: no
   ignore_errors: yes
 
 - name: Check Nova keystone endpoint 
-  shell: curl -k {{ nova_keystone_endpoint.stdout }}
+  shell: curl -k {{ nova_keystone_endpoint.stdout.split('/v').0 }}
   register: nova_keystone_endpoint_response
   failed_when: "{{ nova_keystone_endpoint_response.rc  }} != 0"
   changed_when: no
