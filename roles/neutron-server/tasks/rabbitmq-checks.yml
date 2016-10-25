@@ -88,6 +88,11 @@
   changed_when: no
   ignore_errors: yes
 
+- name: Set rabbit virtual host when blank
+  set_fact:
+    rabbit_virtual_host: "/"
+  when: "rabbit_virtual_host.stdout == ''
+
 - name: RabbitMQ Connection Test for rabbit_hosts
   shell: /tmp/check_rabbitmq.py --host {{ item.split(":")[0] | default(item) }} --port {{ item.split(":")[1] | default('5672') }} --user {{ rabbit_userid.stdout }} --password {{ rabbit_password.stdout }} --vhost {{ rabbit_virtual_host.stdout | default('/') }} --ssl {{ neutron_rabbit_use_ssl.stdout | default('False') }}
   when: "rabbit_hosts.stdout != ''"
@@ -98,7 +103,7 @@
   with_items: "{{ rabbit_hosts.stdout.split(';') }}"
 
 - name: Check RabbitMQ Connection Test for rabbit_host
-  shell: /tmp/check_rabbitmq.py --host {{ rabbit_host.stdout }} --port {{ rabbit_port | default('5672') }} --user {{ rabbit_userid.stdout }} --password {{ rabbit_password.stdout }} --vhost {{ rabbit_virtual_host.stdout | default('/') }} --ssl {{ neutron_rabbit_use_ssl.stdout | default('False') }}
+  shell: /tmp/check_rabbitmq.py --host {{ rabbit_host.stdout }} --port {{ rabbit_port.stdout | default('5672') }} --user {{ rabbit_userid.stdout }} --password {{ rabbit_password.stdout }} --vhost {{ rabbit_virtual_host.stdout | default('/') }} --ssl {{ neutron_rabbit_use_ssl.stdout | default('False') }}
   when: "rabbit_host.stdout != '' and rabbit_hosts.stdout == ''"
   #failed_when: "{{ neutron_rabbit_host_connection.rc }} != 0"
   register: neutron_rabbit_host_connection
