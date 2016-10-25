@@ -1,0 +1,13 @@
+# Ansible files
+*.retry
+
+# Prevent hosts files from sneaking into the git repo
+hosts
+
+# Prevent Ansible Checks data/scripts from entering git repo:
+results/config_report.log
+results/nova-trace-*.log
+
+
+# Swap files
+*.sw[po]
