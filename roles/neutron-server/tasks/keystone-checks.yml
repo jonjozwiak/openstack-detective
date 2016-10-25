@@ -1,0 +1,52 @@
+# Check for user setup in keystone 
+
+# Get neutron Keystone variables 
+# username:        openstack-config --get /etc/neutron/neutron.conf keystone_authtoken username
+# password:    openstack-config --get /etc/neutron/neutron.conf keystone_authtoken password
+# project_name: openstack-config --get /etc/neutron/neutron.conf keystone_authtoken project_name
+# auth_uri:          openstack-config --get /etc/neutron/neutron.conf keystone_authtoken auth_uri
+
+
+- name: Get neutron Server Keystone admin User
+  shell: openstack-config --get /etc/neutron/neutron.conf keystone_authtoken username
+  register: neutron_server_keystone_username
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron Server Keystone admin Password
+  shell: openstack-config --get /etc/neutron/neutron.conf keystone_authtoken password
+  register: neutron_server_keystone_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron Server Keystone admin Tenant
+  shell: openstack-config --get /etc/neutron/neutron.conf keystone_authtoken project_name
+  register: neutron_server_keystone_project_name
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron Server Keystone auth_uri
+  shell: openstack-config --get /etc/neutron/neutron.conf keystone_authtoken auth_uri
+  register: neutron_server_keystone_auth_uri
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check neutron-server keystone token get 
+  shell: openstack --os-username={{neutron_server_keystone_username.stdout}} --os-password={{neutron_server_keystone_password.stdout}} --os-project-name={{neutron_server_keystone_project_name.stdout}} --os-auth-url={{neutron_server_keystone_auth_uri.stdout}} token issue
+  register: neutron_server_token_issue
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron keystone endpoint 
+  shell: openstack --os-username={{neutron_server_keystone_username.stdout}} --os-password={{neutron_server_keystone_password.stdout}} --os-project-name={{neutron_server_keystone_project_name.stdout}} --os-auth-url={{neutron_server_keystone_auth_uri.stdout}} endpoint show neutron | grep public | awk '{print $4}' 
+  register: neutron_keystone_endpoint
+  failed_when: "{{ neutron_keystone_endpoint.rc }} != 0"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check neutron keystone endpoint 
+  shell: curl -k {{ neutron_keystone_endpoint.stdout }}
+  register: neutron_keystone_endpoint_response
+  failed_when: "{{ neutron_keystone_endpoint_response.rc  }} != 0"
+  changed_when: no
+  ignore_errors: yes

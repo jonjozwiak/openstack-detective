@@ -1,0 +1,38 @@
+# systemctl list-unit-files
+# ### Check for enabled if non-pacemaker.  Disabled if pacemaker?
+# ### That actually won't work with the *HA light* config
+
+- name: Check that neutron-server is running
+  shell: systemctl status neutron-server.service | head -5 
+  register: neutron_server_running
+  failed_when: "'dead' in '{{ neutron_server_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that neutron-dhcp-agent is running
+  shell: systemctl status neutron-dhcp-agent.service | head -5 
+  register: neutron_dhcp_agent_running
+  failed_when: "'dead' in '{{ neutron_dhcp_agent_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that neutron-l3-agent is running
+  shell: systemctl status neutron-l3-agent.service | head -5 
+  register: neutron_l3_agent_running
+  failed_when: "'dead' in '{{ neutron_l3_agent_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that neutron-metadata-agent is running
+  shell: systemctl status neutron-metadata-agent.service | head -5 
+  register: neutron_metadata_agent_running
+  failed_when: "'dead' in '{{ neutron_metadata_agent_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that neutron-openvswitch-agent is running
+  shell: systemctl status neutron-openvswitch-agent.service | head -5 
+  register: neutron_openvswitch_agent_running
+  failed_when: "'dead' in '{{ neutron_openvswitch_agent_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes

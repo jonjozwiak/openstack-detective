@@ -1,0 +1,20 @@
+---
+- name: Run process checks
+  include: process-checks.yml
+  tags:
+    - process
+
+- name: Run Database Checks
+  include: db-checks.yml
+  tags: 
+    - db
+
+- name: Run RabbitMQ Checks
+  include: rabbitmq-checks.yml
+  tags:
+    - rabbitmq
+
+- name: Run Keystone Checks
+  include: keystone-checks.yml
+  tags:
+    - keystoneauth

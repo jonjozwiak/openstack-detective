@@ -1,0 +1,6 @@
+--
+- name: Get Rabbit User
+  shell: openstack-config --get /etc/glance/glance-api.conf oslo_messaging_rabbit rabbit_userid
+  register: rabbit_userid
+  changed_when: no
+  ignore_errors: yes
