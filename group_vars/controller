@@ -102,3 +102,49 @@ controller_checks:
     nova_keystone_endpoint_response:
         url: ""
         detail: "Nova endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
+    #### Neutron ####
+    neutron_server_running:
+        url: "none"
+        detail: "neutron-server is not running"
+    neutron_dhcp_agent_running:
+        url: "none"
+        detail: "neutron-dhcp-agent is not running"
+    neutron_l3_agent_running:
+        url: "none"
+        detail: "neutron-l3-agent is not running"
+    neutron_metadata_agent_running:
+        url: "none"
+        detail: "neutron-metadata-agent is not running"
+    neutron_openvswitch_agent_running:
+        url: "none"
+        detail: "neutron-openvswitch-agent is not running"
+    neutron_db_connection: 
+        url: ""
+        detail: "Connection to neutron DB Failed.  Check Login credentials in /etc/neutron/neutron.conf"
+    neutron_db_empty: 
+        url: "none"
+        detail: "Connection to neutron DB working, but the database has no tables.  Run 'neutron-manage db_sync' to populate database"
+    neutron_rabbit_user_blank:
+        url: ""
+        detail: "There is no rabbitmq_userid specified in /etc/neutron/neutron.conf"
+    neutron_rabbit_password_blank:
+        url: ""
+        detail: "There is no rabbit_password specified in /etc/neutron/neutron.conf"
+    neutron_rabbit_hosts_blank:
+        url: ""
+        detail: "Both rabbit_host and rabbit_hosts are blank.  Check /etc/neutron/neutron.conf"
+    neutron_rabbit_hosts_connection:
+        url: ""
+        detail: "neutron - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/neutron/neutron.conf for rabbit_hosts, rabbit_userid, and rabbit_password"
+    neutron_rabbit_host_connection:
+        url: ""
+        detail: "neutron - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/neutron/neutron.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
+    neutron_server_keystone_token_get:
+        url: ""
+        detail: "neutron API authentication to keystone failed.  Check /etc/neutron/neutron.conf and keystone"
+    neutron_keystone_endpoint:
+        url: ""
+        detail: "neutron endpoint not found in Keystone.  This may be due to keystone auth failing or may be the endpoint was never created."
+    neutron_keystone_endpoint_response:
+        url: ""
+        detail: "neutron endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"

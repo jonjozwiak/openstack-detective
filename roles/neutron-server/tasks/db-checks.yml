@@ -1,0 +1,51 @@
+- name: Get neutron-server DB connection string
+  shell: openstack-config --get /etc/neutron/neutron.conf database connection
+  register: neutron_server_db
+  changed_when: no
+  ignore_errors: yes
+
+- name: neutron server DB string Blank
+  fail: msg="neutron server DB string is blank"
+  when: "'{{ neutron_server_db.stdout }}' == ''"
+  register: neutron_server_db_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron DB User
+  shell: openstack-config --get /etc/neutron/neutron.conf database connection | sed 's/mysql+pymysql:\/\///;s/mysql:\/\///;s/:.*//'
+  register: neutron_db_user
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron DB Password
+  shell: openstack-config --get /etc/neutron/neutron.conf database connection | sed 's/@.*//;s/.*:.*://'
+  register: neutron_db_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron DB Host
+  shell: openstack-config --get /etc/neutron/neutron.conf database connection | sed 's/.*@//;s/\/.*//'
+  register: neutron_db_host
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get neutron DB Name
+  shell: openstack-config --get /etc/neutron/neutron.conf database connection | sed 's/.*@//;s/.*\///'
+  register: neutron_db_dbname
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check DB Connection
+  shell: mysql -e 'SHOW TABLES;' -D'{{ neutron_db_dbname.stdout }}' -h'{{ neutron_db_host.stdout }}' -u'{{ neutron_db_user.stdout }}' -p'{{ neutron_db_password.stdout }}'
+  register: neutron_db_connection
+  failed_when: "{{ neutron_db_connection.rc }} != 0" 
+  changed_when: no 
+  ignore_errors: yes
+
+- name: Check for empty DB
+  shell: mysql -e 'SHOW TABLES;' -D'{{ neutron_db_dbname.stdout }}' -h'{{ neutron_db_host.stdout }}' -u'{{ neutron_db_user.stdout }}' -p'{{ neutron_db_password.stdout }}'
+  register: neutron_db_empty
+  when: "{{ neutron_db_connection.rc }} == 0"
+  failed_when: "'{{ neutron_db_empty.stdout }}' == ''"
+  changed_when: no
+  ignore_errors: yes
