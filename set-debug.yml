@@ -1,0 +1,109 @@
+# Get and display value of debug if no parameters are set
+# Pass debug=true or debug=false to change all config files to that value
+
+- hosts: controller
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  vars:
+    config_files:
+      - /etc/glance/glance-api.conf
+      - /etc/glance/glance-registry.conf
+      - /etc/cinder/cinder.conf
+      - /etc/keystone/keystone.conf
+  tasks:
+    - name: Get old Debug Settings
+      shell: openstack-config --get {{ item }} DEFAULT debug
+      register: openstack_config_debug_old
+      changed_when: no
+      ignore_errors: yes
+      with_items: "{{ config_files }}"
+
+    - name: Display old value
+      debug:
+        msg: "Old value of DEBUG for {{ item.item }} is {{ item.stdout }}"
+        verbosity: 1
+      with_items: "{{ openstack_config_debug_old.results }}"
+      when: item.rc == 0
+
+    - name: Set Debug Settings
+      shell: openstack-config --set {{ item }} DEFAULT debug {{ debug }}
+      changed_when: no
+      ignore_errors: yes
+      with_items: "{{ config_files }}"
+      when: debug is defined
+
+    - name: Get new Debug Settings
+      shell: openstack-config --get {{ item }} DEFAULT debug
+      register: openstack_config_debug_new
+      changed_when: no
+      ignore_errors: yes
+      with_items: "{{ config_files }}"
+      when: debug is defined
+
+    - name: Display new value
+      debug:
+        msg: "New value of DEBUG for {{ item.item }} is {{ item.stdout }}"
+        verbosity: 1
+      with_items: "{{ openstack_config_debug_new.results }}"
+      when: 
+        - "{{ item.rc | default(1) == 0 }}"
+        - debug is defined
+
+- hosts: all:!localhost
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  vars:
+    config_files:
+      - /etc/nova/nova.conf
+      - /etc/neutron/neutron.conf
+      - /etc/neutron/metadata_agent.ini
+      - /etc/neutron/l3_agent.ini
+      - /etc/neutron/dhcp_agent.ini
+
+  tasks:
+    - name: Get old Debug Settings
+      shell: openstack-config --get {{ item }} DEFAULT debug
+      register: openstack_config_debug_old
+      changed_when: no
+      ignore_errors: yes
+      with_items: "{{ config_files }}"
+
+    - name: Display old value
+      debug:
+        msg: "Old value of DEBUG for {{ item.item }} is {{ item.stdout }}"
+        verbosity: 1
+      with_items: "{{ openstack_config_debug_old.results }}"
+      when: item.rc == 0
+
+    - name: Set Debug Settings
+      shell: openstack-config --set {{ item }} DEFAULT debug {{ debug }}
+      changed_when: no
+      ignore_errors: yes
+      with_items: "{{ config_files }}"
+      when: debug is defined
+
+    - name: Get new Debug Settings
+      shell: openstack-config --get {{ item }} DEFAULT debug
+      register: openstack_config_debug_new
+      changed_when: no
+      ignore_errors: yes
+      with_items: "{{ config_files }}"
+      when: debug is defined
+
+    - name: Display new value
+      debug:
+        msg: "New value of DEBUG for {{ item.item }} is {{ item.stdout }}"
+        verbosity: 1
+      with_items: "{{ openstack_config_debug_new.results }}"
+      when: 
+        - "{{ item.rc | default(1) == 0 }}"
+        - debug is defined
+
+    - name: Restart OpenStack services
+      command: openstack-service restart
+      when: debug is defined
+
+    - name: Debug not defined
+      debug:
+        msg: "Variable for 'debug' not set, so values were only extracted and nothing was changed"
+      when: debug is not defined
