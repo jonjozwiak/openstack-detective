@@ -1,0 +1,204 @@
+# Playbook to inspect logs for Nova instance activities
+# Usage: Boot an instance (or have the UUID of a previously booted instance)
+# ansible-playbook nova-trace-logs.yml -i hosts -e nova_instance=<uuid>
+# View output at results/nova-trace-sorted-<uuid>.log
+#
+# To skip the debug flag check:
+# ansible-playbook nova-trace-logs.yml -i hosts -e nova_instance=<uuid> -e force_debug_logs=false
+# NOTE: You won't see full details of the instance without debug logs on.  But you have the option to check first without enabling them...
+
+- hosts: controller
+  name: Controller Checks
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  vars:
+    # If debug isn't enabled you won't get a full view of instance boot actions
+    force_debug_logs: true
+  roles:
+    - common
+  tasks:
+ 
+    - name: Get Debug Settings
+      shell: openstack-config --get {{ item }} DEFAULT debug
+      register: openstack_config_debug
+      changed_when: no
+      ignore_errors: yes
+      with_items: 
+        - /etc/nova/nova.conf
+        - /etc/neutron/neutron.conf
+        - /etc/neutron/metadata_agent.ini
+        - /etc/neutron/l3_agent.ini
+        - /etc/neutron/dhcp_agent.ini
+        - /etc/glance/glance-api.conf
+        - /etc/glance/glance-registry.conf
+        - /etc/cinder/cinder.conf
+        - /etc/keystone/keystone.conf
+
+    - name: Fail if debug set to false
+      fail: msg="Debug set to false in {{ item.item }} on {{ ansible_hostname }}"
+      when: "(force_debug_logs == true) and ({{ item.rc }} != 0 or '{{ item.stdout }}' == 'False' or '{{ item.stdout }}' == 'false')"
+      changed_when: no
+      with_items: "{{ openstack_config_debug.results }}"
+
+    - name: Fail if nova_instance not set
+      fail: msg="You must set a nova_instance variable to execute this playbook"
+      when: "nova_instance is undefined"
+      changed_when: no
+
+
+    - name: Get Instance Logs 
+      shell: grep {{ nova_instance }} {{ item }}
+      register: instance_logs
+      changed_when: no
+      ignore_errors: yes
+      with_items:
+        - /var/log/nova/nova-api.log
+        - /var/log/nova/nova-conductor.log
+        - /var/log/nova/nova-consoleauth.log
+        - /var/log/nova/nova-manage.log
+        - /var/log/nova/nova-novncproxy.log
+        - /var/log/nova/nova-scheduler.log
+        - /var/log/neutron/dhcp-agent.log
+        - /var/log/neutron/l3-agent.log
+        - /var/log/neutron/metadata-agent.log
+        - /var/log/neutron/openvswitch-agent.log
+        - /var/log/neutron/server.log
+        - /var/log/glance/api.log
+        - /var/log/glance/registry.log
+        - /var/log/cinder/api.log
+        - /var/log/cinder/cinder-manage.log
+        - /var/log/cinder/scheduler.log
+        - /var/log/cinder/volume.log
+        - /var/log/keystone/keystone.log
+
+- hosts: compute
+  name: Compute Checks
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  vars:
+    # If debug isn't enabled you won't get a full view of instance boot actions
+    force_debug_logs: true
+  roles:
+    - common
+  tasks: 
+    # TODO - Make more efficient by checking only the target hypervisor vs. all 
+    - name: Get Debug Settings
+      shell: openstack-config --get {{ item }} DEFAULT debug
+      register: openstack_config_debug
+      changed_when: no
+      ignore_errors: yes
+      with_items:
+        - /etc/nova/nova.conf
+        - /etc/neutron/neutron.conf
+
+    - name: Fail if debug set to false
+      fail: msg="Debug set to false in {{ item.item }} on {{ ansible_hostname }}"
+      when: "(force_debug_logs == true) and ({{ item.rc }} != 0 or '{{ item.stdout }}' == 'False' or '{{ item.stdout }}' == 'false')"
+      changed_when: no
+      with_items: "{{ openstack_config_debug.results }}"
+
+    - name: Get Instance Logs
+      shell: grep {{ nova_instance }} {{ item }}
+      register: instance_logs
+      changed_when: no
+      ignore_errors: yes
+      with_items:
+        - /var/log/nova/nova-compute.log
+        - /var/log/neutron/openvswitch-agent.log
+
+# TODO- Add instance console log check as well?
+
+- hosts: localhost
+  #gather_facts: True            # Needed for date/time in report
+  become: false
+  name: Generating config report
+  vars:
+    - debug: false
+  tags:
+    - report
+  tasks:
+    - name: Dump host vars
+      debug: var=hostvars[item]
+      with_items: "{{groups['all']}}"
+      when: debug == true
+ 
+    - local_action: template src=templates/nova-trace-logs.j2 dest={{result_dir}}/nova-trace-{{nova_instance}}.log
+      become: false
+
+    - name: Sort nova instance trace output
+      shell: sort -k1 {{result_dir}}/nova-trace-{{nova_instance}}.log > {{result_dir}}/nova-trace-sorted-{{nova_instance}}.log
+
+
+# Get UUID 
+#nova list  
+
+#Request Flow: 
+#Testng on ospd8 / osp8ctrl
+#PRIVNET1ID=$(neutron net-list | grep privnet1  | grep -v tenant | awk '{print $2}')
+#nova boot testserver --flavor m1.tiny --image cirros-0.3.4-x86_64 --key-name adminkey --security-groups default --nic net-id=$PRIVNET1ID
+#
+#  Adding --debug to nova boot shows
+#  * keystone token-get
+#  * glance image-list 
+#  * glance image-show? the specific image
+#  * nova flavor-show m1.tiny
+#  * nova flavor-list 
+#  * Posts to nova servers 
+#  * Gets the server
+#  * Gets flavor
+#  * Gets image
+#  * Outputs the normal boot output 
+#
+#
+#1. dashboard or CLI gets the user credential and does the REST call to Keystone for authentication.
+#2. Keystone authenticate the credentials and generate & send back auth-token which will be used for sending request to other Components through REST-call.
+#3. Dashboard or CLI convert the new instance request specified in  ‘launch instance’ or ‘nova-boot’ form to REST API request and send it to nova-api.
+#
+#nova boot testserver --flavor m1.tiny --image cirros-0.3.4-x86_64 --key-name adminkey --security-groups default --nic net-id=$PRIVNET1ID
+#
+#nova show testserver2 (Grab UUID - 0bf288e7-f427-4fa2-846f-bd72cf459af9)
+#
+#4. nova-api receive the request and sends the request for validation auth-token and access permission to keystone.
+#5. Keystone validates the token and sends updated auth headers with roles and permissions.
+#6. nova-api interacts with nova-database.
+#7. Creates initial db entry for new instance.
+#8. nova-api sends the rpc.call request to nova-scheduler excepting to get  updated instance entry with host ID specified.
+#9. nova-scheduler picks the request from the queue.
+#10. nova-scheduler interacts with nova-database to find an appropriate host via filtering and weighing.
+#11. Returns the updated instance entry with appropriate host ID after filtering and weighing.
+#12. nova-scheduler sends the rpc.cast request to nova-compute for ‘launching instance’ on appropriate host .
+#13. nova-compute picks the request from the queue.
+#14. nova-compute send the rpc.call request to nova-conductor to fetch the instance information such as host ID and flavor( Ram , CPU ,Disk).
+#15. nova-conductor picks the request from the queue.
+#16. nova-conductor interacts with nova-database.
+#17. Return the instance information.
+#18. nova-compute picks the instance information from the queue.
+#19. nova-compute does the REST call by passing auth-token to glance-api  to get the Image URI by Image ID from glance and upload image from image storage.
+#20. glance-api validates the auth-token with keystone. 
+#21. nova-compute get the image metadata.
+#22. nova-compute does the REST-call by passing auth-token to Network API to allocate and configure the network such that instance gets the IP address. 
+#23. quantum-server validates the auth-token with keystone.
+#24. nova-compute get the network info.
+#25. nova-compute does the REST call by passing auth-token to Volume API to attach volumes to instance.
+#26. cinder-api validates the auth-token with keystone.
+#27. nova-compute gets the block storage info.
+#28. nova-compute generates data for hypervisor driver and executes request on Hypervisor( via libvirt or api).
+#
+#
+#Status  Task                    Power state     Steps
+#Build   scheduling              None            3-12
+#Build   networking              None            22-24
+#Build   block_device_mapping    None            25-27
+#Build   spawing                 None            28
+#Active  none                    Running         
+#
+#
+#Consideration: Moving services to WSGI may change where things are in the logs.  Need to look into this
+#
+#NOTE - Tracing a VM should work to trace running VMs as well as failed VMs
+#Testing: 
+# - Boot from ephemeral
+# - Boot from Cinder vol 
+# - Boot from snapshot
+#
+#Check out page 240 in CL210 for a more detailed list of tasks (261 in my PDF).  It's a much better way for me to trace a VM ... 

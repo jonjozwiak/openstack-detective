@@ -1,0 +1,59 @@
+- name: Get Nova DB connection string
+  shell: openstack-config --get /etc/nova/nova.conf database connection
+  register: nova_db
+  changed_when: no
+  ignore_errors: yes
+
+- name: Nova DB string Blank
+  fail: msg="Nova DB string is blank"
+  when: "'{{ nova_db.stdout }}' == ''"
+  register: nova_db_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova DB User
+  shell: openstack-config --get /etc/nova/nova.conf database connection | sed 's/mysql+pymysql:\/\///;s/mysql:\/\///;s/:.*//'
+  register: nova_db_user
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova DB Password
+  shell: openstack-config --get /etc/nova/nova.conf database connection | sed 's/@.*//;s/.*:.*://'
+  register: nova_db_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova DB Host
+  shell: openstack-config --get /etc/nova/nova.conf database connection | sed 's/.*@//;s/\/.*//'
+  register: nova_db_host
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova DB Name
+  shell: openstack-config --get /etc/nova/nova.conf database connection | sed 's/.*@//;s/.*\///'
+  register: nova_db_dbname
+  changed_when: no
+  ignore_errors: yes
+
+#user:      openstack-config --get /etc/nova/nova.conf database connection | sed 's/mysql:\/\///;s/:.*//'
+#password:  openstack-config --get /etc/nova/nova.conf database connection | sed 's/@.*//;s/.*:.*://'
+#host:      openstack-config --get /etc/nova/nova.conf database connection | sed 's/.*@//;s/\/.*//'
+#database:  openstack-config --get /etc/nova/nova.conf database connection | sed 's/.*@//;s/.*\///'
+
+- name: Check DB Connection
+  shell: mysql -e 'SHOW TABLES;' -D'{{ nova_db_dbname.stdout }}' -h'{{ nova_db_host.stdout }}' -u'{{ nova_db_user.stdout }}' -p'{{ nova_db_password.stdout }}'
+  register: nova_db_connection
+  failed_when: "{{ nova_db_connection.rc }} != 0" 
+  changed_when: no 
+  ignore_errors: yes
+
+- name: Check for empty DB
+  shell: mysql -e 'SHOW TABLES;' -D'{{ nova_db_dbname.stdout }}' -h'{{ nova_db_host.stdout }}' -u'{{ nova_db_user.stdout }}' -p'{{ nova_db_password.stdout }}'
+  register: nova_db_empty
+  when: "{{ nova_db_connection.rc }} == 0"
+  failed_when: "'{{ nova_db_empty.stdout }}' == ''"
+  changed_when: no
+  ignore_errors: yes
+
+# Check for necessary grants to access DB --> This should be done in mysql check?  If I don't have the grant, my connection will fail.... 
+# ### How to check this if nova isn't running on same host as mysql?  

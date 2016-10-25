@@ -7,7 +7,7 @@
   shell: rpm -qa | grep openstack-utils 
   register: openstack_utils
   changed_when: no
-  failed_when: "'openstack_utils' not in '{{ openstack_utils.stdout}}'"
+  failed_when: "'openstack-utils' not in '{{ openstack_utils.stdout }}'"
   when: 
     - inventory_hostname in groups['controller'] 
     - inventory_hostname in groups['compute'] 
@@ -35,6 +35,34 @@
   changed_when: no
   ignore_errors: yes
   tags:
+    - common
+
+- name: Check ntp sync if ntp is running 
+  shell: ntpstat 
+  register: ntp_sync
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - common
+
+- name: Check chrony sync if chronyd is running 
+  shell: chronyc tracking
+  register: chronyd_sync
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - common
+
+- name: Report if time not synchronized
+  fail: msg="Time is not in sync although NTP and Chrony are running."
+  failed_when: "(('running' in '{{ ntpd_running.stdout }}') and ('unsynchronised' in '{{ ntp_sync.stdout }}')) or (('running' in '{{ chronyd_running.stdout }}') and ('Not synchronised' in '{{ chronyd_sync.stdout }}'))"
+  register: chronyd_ntpd_synced
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - common
+- debug: msg="synced output is {{chronyd_ntpd_synced}}"
+  tags: 
     - common
 
 #

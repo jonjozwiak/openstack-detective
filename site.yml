@@ -7,6 +7,14 @@
     - glance
     - nova-controller
 
+- hosts: compute
+  name: Compute Checks
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  roles:
+    - common
+    - nova-compute
+
 
 - hosts: localhost
   gather_facts: True            # Needed for date/time in report

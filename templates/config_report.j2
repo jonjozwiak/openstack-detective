@@ -6,12 +6,32 @@
 ---------------------------------------
 | Checks for host : {{ host }}
 ---------------------------------------
-{% for check in hostvars[host]['checks'] %}
+{% for check in hostvars[host]['controller_checks'] %}
 {% if hostvars[host][check] is defined %}
 {%   if hostvars[host][check]['failed'] is defined %}
 {%     if hostvars[host][check]['failed'] == true %}
 ERROR: {{ check }} failed
-  -- {{ hostvars[host]['checks'][check]['detail'] }}
+  -- {{ hostvars[host]['controller_checks'][check]['detail'] }}
+{%     else %}
+OK: {{ check }} passed
+{%     endif %}
+{%   endif %}
+{% else %}
+WARNING: {{ check }} NOT DEFINED - Check the ansible run to see what happened
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+{% for host in groups['compute'] %}
+---------------------------------------
+| Checks for host : {{ host }}
+---------------------------------------
+{% for check in hostvars[host]['compute_checks'] %}
+{% if hostvars[host][check] is defined %}
+{%   if hostvars[host][check]['failed'] is defined %}
+{%     if hostvars[host][check]['failed'] == true %}
+ERROR: {{ check }} failed
+  -- {{ hostvars[host]['compute_checks'][check]['detail'] }}
 {%     else %}
 OK: {{ check }} passed
 {%     endif %}

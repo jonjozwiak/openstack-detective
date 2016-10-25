@@ -1,0 +1,18 @@
+# systemctl list-unit-files
+# ### Check for enabled if non-pacemaker.  Disabled if pacemaker?
+# ### That actually won't work with the *HA light* config
+
+- name: Check that nova-compute is running
+  shell: systemctl status openstack-nova-compute | head -7
+  register: nova_compute_running
+  failed_when: "'dead' in '{{ nova_compute_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that libvirtd is running
+  shell: systemctl status libvirtd | head -7
+  register: libvirtd_running
+  failed_when: "'dead' in '{{ libvirtd_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+

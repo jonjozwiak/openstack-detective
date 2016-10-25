@@ -1,0 +1,39 @@
+# systemctl list-unit-files
+# ### Check for enabled if non-pacemaker.  Disabled if pacemaker?
+# ### That actually won't work with the *HA light* config
+
+- name: Check that nova-api is running
+  shell: systemctl status openstack-nova-api | head -7
+  register: nova_api_running
+  failed_when: "'dead' in '{{ nova_api_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that nova-scheduler is running
+  shell: systemctl status openstack-nova-scheduler | head -7
+  register: nova_scheduler_running
+  failed_when: "'dead' in '{{ nova_scheduler_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that nova-conductor is running
+  shell: systemctl status openstack-nova-conductor | head -7
+  register: nova_conductor_running
+  failed_when: "'dead' in '{{ nova_conductor_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that nova-novncproxy is running
+  shell: systemctl status openstack-nova-novncproxy | head -7
+  register: nova_novncproxy_running
+  failed_when: "'dead' in '{{ nova_novncproxy_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that nova-consoleauth is running
+  shell: systemctl status openstack-nova-consoleauth | head -7
+  register: nova_consoleauth_running
+  failed_when: "'dead' in '{{ nova_consoleauth_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+

@@ -1,0 +1,44 @@
+---
+#
+# Checks for Nova Compute Services
+# 
+
+# Check for iptables rules
+
+- name: Run Nova process checks
+  include: process-checks.yml
+  tags:
+    - process
+    - nova-compute-process
+    - nova-compute
+
+- name: Run Nova RabbitMQ Checks
+  include: rabbitmq-checks.yml
+  tags:
+    - rabbitmq
+    - nova-compute-rabbitmq
+    - nova-compute
+
+- name: Run Libvirt Checks
+  include: libvirt-checks.yml
+  tags:
+    - libvirt
+    - nova-compute-libvirt
+    - nova-compute
+
+# Add check for neutron auth based on /etc/nova/nova.conf neutron section
+
+# Add check for VNC server setup (both controller and compute settings) 
+
+# Add check if using Ceph ephemeral to validate
+
+# Functional test???  nova boot?  
+
+# Search logs? 
+# /var/log/nova/nova-compute.log
+# /var/log/libvirt/qemu/instance-....log
+### Maybe better to search for specific errors... And then check if they occurred recently
+### Performance impact if very large logs? 
+
+
+

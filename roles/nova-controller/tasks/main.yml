@@ -1,0 +1,44 @@
+---
+#
+# Checks for Nova Controller Services
+# 
+
+# Check for iptables rules
+
+- name: Run Nova process checks
+  include: process-checks.yml
+  tags:
+    - process
+    - nova-controller-process
+    - nova-controller
+
+- name: Run Nova Database Checks
+  include: db-checks.yml
+  tags: 
+    - db
+    - nova-controller-db
+    - nova-controller
+
+- name: Run Nova RabbitMQ Checks
+  include: rabbitmq-checks.yml
+  tags:
+    - rabbitmq
+    - nova-controller-rabbitmq
+    - nova-controller
+
+- name: Run Nova Keystone Checks
+  include: keystone-checks.yml
+  tags:
+    - keystoneauth
+    - nova-controller-keystoneauth
+    - nova-controller
+
+# Functional test???  nova boot?  
+
+# Search logs? 
+# /var/log/nova/*.log
+### Maybe better to search for specific errors... And then check if they occurred recently
+### Performance impact if very large logs? 
+
+
+

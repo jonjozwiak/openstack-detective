@@ -1,0 +1,42 @@
+
+# Get RabbitMQ variables 
+# user:         openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_userid
+# password:     openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_password
+# virtual host: openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_virtual_host
+# host:         openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_host
+# hosts:        openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_hosts
+# port:         openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_port
+# ssl:          openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_use_ssl
+# ha_queues:    openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_ha_queues
+# exchange:     openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_ha_queues
+# topic:        openstack-config --get /etc/nova/nova.conf oslo_messaging_rabbit rabbit_ha_queues
+
+# Check for /dev/kvm?
+
+- name: Get virtualization kernel module
+  shell: lsmod | egrep "kvm_intel|kvm_amd"
+  register: kvm_module
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova virt_type
+  shell: openstack-config --get /etc/nova/nova.conf libvirt virt_type
+  register: nova_virt_type
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check for kernel module for KVM to match virt_type
+  fail: msg="Kernel module missing for KVM."
+  failed_when: "('{{ nova_virt_type.stdout }}' == 'kvm' or '{{ nova_virt_type.stdout }}' == '') and ('{{ kvm_module.stdout }}' == '')"
+  register: libvirt_missing_kernel_module
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check qemu and warn if used 
+  fail: msg="Using qemu will result in poor performance."
+  failed_when: "'{{ nova_virt_type.stdout }}' == 'qemu'"
+  register: nova_virt_type_qemu 
+  changed_when: no
+  ignore_errors: yes
+
+

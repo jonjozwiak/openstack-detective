@@ -1,0 +1,50 @@
+---
+# vi:syntax=yaml
+#remote_user: "heat-admin"
+#become: "True"
+#result_dir: "{{inventory_dir}}/results"
+#result_dir: "/home/stack/"
+
+compute_checks:
+    #### COMMON ####
+    chronyd_ntpd_running:
+        url: ""
+        detail: "Both chronyd and ntp are not running.  Time may drift"
+    chronyd_ntpd_synced:
+        url: ""
+        detail: "chronyd or ntp are running, but time is not synced"
+    #### NOVA COMPUTE ####
+    #It appears a nova DB connection isn't required for compute
+    #nova_db_connection:
+    #    url: ""
+    #    detail: "Connection to Nova DB Failed.  Check Login credentials in /etc/nova/nova.conf"
+    #nova_db_empty:
+    #    url: "none"
+    #    detail: "Connection to Nova DB working, but the database has no tables.  Run 'nova-manage db sync' to populate database"
+    nova_rabbit_user_blank:
+        url: ""
+        detail: "There is no rabbitmq_userid specified in /etc/nova/nova.conf"
+    nova_rabbit_password_blank:
+        url: ""
+        detail: "There is no rabbit_password specified in /etc/nova/nova.conf"
+    nova_rabbit_hosts_blank:
+        url: ""
+        detail: "Both rabbit_host and rabbit_hosts are blank.  Check /etc/nova/nova.conf"
+    nova_rabbit_hosts_connection:
+        url: ""
+        detail: "Nova - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/nova/nova.conf for rabbit_hosts, rabbit_userid, and rabbit_password"
+    nova_rabbit_host_connection:
+        url: ""
+        detail: "Nova - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/nova/nova.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
+    nova_compute_running:
+        url: ""
+        detail: "openstack-nova-compute is not running"
+    libvirtd_running:
+        url: ""
+        detail: "libvirtd is not running"
+    libvirt_missing_kernel_module:
+        url: ""
+        detail: "kvm_amd or kvm_intel module not loaded.  Use lsmod to investigate.  Also check virt-host-validate"
+    nova_virt_type_qemu:
+        url: ""
+        detail: "virt_type of qemu in /etc/nova/nova.conf will result in poor performance.  Check for virtualization extentions and availability of kvm_amd or kvm_intel module and correct nova.conf"

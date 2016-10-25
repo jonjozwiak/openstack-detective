@@ -1,0 +1,61 @@
+# Check for user setup in keystone 
+
+# Get Nova Keystone variables 
+# admin_user:        openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_user
+# admin_password:    openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_password
+# admin_tenant_name: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_tenant_name
+# auth_uri:          openstack-config --get /etc/nova/nova.conf keystone_authtoken auth_uri
+# identity_uri:      openstack-config --get /etc/nova/nova.conf keystone_authtoken identity_uri
+
+
+- name: Get Nova Keystone admin User
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_user
+  register: nova_keystone_admin_user
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova Keystone admin Password
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_password
+  register: nova_keystone_admin_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova Keystone admin Tenant
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken admin_tenant_name
+  register: nova_keystone_admin_tenant_name
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova Keystone auth_uri
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken auth_uri
+  register: nova_keystone_auth_uri
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova Keystone identity_uri
+  shell: openstack-config --get /etc/nova/nova.conf keystone_authtoken identity_uri
+  register: nova_keystone_identity_uri
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check nova keystone token get 
+  shell: export OS_USERNAME={{nova_keystone_admin_user.stdout}};export OS_PASSWORD={{nova_keystone_admin_password.stdout}};export OS_TENANT_NAME={{nova_keystone_admin_tenant_name.stdout}}; export OS_AUTH_URL={{nova_keystone_auth_uri.stdout}}; keystone token-get
+  register: nova_keystone_token_get
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Nova keystone endpoint 
+  shell: export OS_USERNAME={{nova_keystone_admin_user.stdout}};export OS_PASSWORD={{nova_keystone_admin_password.stdout}};export OS_TENANT_NAME={{nova_keystone_admin_tenant_name.stdout}}; export OS_AUTH_URL={{nova_keystone_auth_uri.stdout}}; keystone endpoint-get --service compute | grep public | awk '{print $4}'
+  register: nova_keystone_endpoint
+  failed_when: "{{ nova_keystone_endpoint.rc }} != 0"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check Nova keystone endpoint 
+  shell: curl -k {{ nova_keystone_endpoint.stdout }}
+  register: nova_keystone_endpoint_response
+  failed_when: "{{ nova_keystone_endpoint_response.rc  }} != 0"
+  changed_when: no
+  ignore_errors: yes
+
+
