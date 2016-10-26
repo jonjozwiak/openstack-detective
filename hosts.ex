@@ -1,6 +1,10 @@
 [all:vars]
 # OpenStack release. Valid value is one of 'kilo,liberty,mitaka,newton' and so on
 openstack_release=newton
+os_admin_username=admin
+os_admin_password=password
+os_admin_project_name=admin
+os_auth_url=http://192.168.220.100:5000/v2.0
 
 [controller]
 192.168.220.78
