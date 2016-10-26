@@ -71,6 +71,39 @@
         - /var/log/cinder/volume.log
         - /var/log/keystone/keystone.log
 
+    - name: Get openstack server details
+      shell: openstack --os-username={{os_admin_username}} --os-password={{os_admin_password}} --os-project-name={{os_admin_project_name}} --os-auth-url={{os_auth_url}} server show {{ nova_instance }}
+      register: openstack_server_show
+      changed_when: no
+      ignore_errors: yes
+
+    - name: Get openstack server faults 
+      shell: openstack --os-username={{os_admin_username}} --os-password={{os_admin_password}} --os-project-name={{os_admin_project_name}} --os-auth-url={{os_auth_url}} server show {{ nova_instance }} -c fault -f value
+      register: openstack_server_show_fault
+      changed_when: no
+      ignore_errors: yes
+
+    - name: Set nova_instance_fault fact if the instance has a fault
+      set_fact: 
+         nova_instance_fault: "{{ openstack_server_show_fault.stdout }}"
+      when: "{{ 'openstack_server_show_fault.stdout' }} != ''"
+      changed_when: no
+      ignore_errors: yes
+
+    - name: Get Hypervisor Disabled/down List 
+      #shell: nova --os-user-name {{os_admin_username}} --os-password {{os_admin_password}} --os-project-name {{os_admin_project_name}} --os-auth-url {{os_auth_url}} hypervisor-list | tr '+-' '#' | egrep -v '####|Hypervisor|up|enabled'
+      shell: nova --os-user-name {{os_admin_username}} --os-password {{os_admin_password}} --os-project-name {{os_admin_project_name}} --os-auth-url {{os_auth_url}} hypervisor-list 
+      register: hypervisor_down
+      changed_when: no
+      ignore_errors: yes
+
+#### Do something with this if hypervisors down or disabled
+
+    #- name:
+#openstack hypervisor show 1 -c hypervisor_hostname -c status -c state -c free_ram_mb -c running_vms -c vcpus -c vcpus_used -f value | sed ':a;N;$!ba;s/\n/,/g'
+
+# 
+
 - hosts: compute
   name: Compute Checks
   remote_user: "{{ remote_user }}"
@@ -128,4 +161,47 @@
     - name: Sort nova instance trace output
       shell: sort -k1 {{result_dir}}/nova-trace-{{nova_instance}}.log > {{result_dir}}/nova-trace-sorted-{{nova_instance}}.log
 
+    - name: Faults | Check for no valid host
+      shell: grep Filter {{result_dir}}/nova-trace-sorted-{{nova_instance}}.log
+      register: fault_no_valid_host
+      changed_when: no
+      ignore_errors: yes
+      when: "(hostvars[groups['controller'][0]].nova_instance_fault is defined) and ('No valid host was found' in '{{ hostvars[groups['controller'][0]].nova_instance_fault.message }}')"
+
+    - debug: 
+        var: fault_no_valid_host
+        verbosity: 1
+
+    - name: Set fact for host filter log
+      set_fact:
+        host_filter_log: "{{fault_no_valid_host.stdout_lines.1.split(\"', '\")}}"
+      when: "(hostvars[groups['controller'][0]].nova_instance_fault is defined) and ('No valid host was found' in '{{ hostvars[groups['controller'][0]].nova_instance_fault.message }}')"
+    
+    - debug:
+        var: host_filter_log
+        verbosity: 1
+
+    - name: Set fact for failed filter
+      set_fact:
+        failed_filter: "{{fault_no_valid_host.stdout_lines.1.split(\"Filter results: \").1.split(\"', '\")[-1].split(\":\")[0]}}"
+        #failed_filter: {{fault_no_valid_host.stdout_lines.1.split("Filter results{{':'}} ").1.split("', '")[-1].split(":")[0]}}
+      when: "(hostvars[groups['controller'][0]].nova_instance_fault is defined) and ('No valid host was found' in '{{ hostvars[groups['controller'][0]].nova_instance_fault.message }}')"
+
+    - debug:
+        var: failed_filter
+        verbosity: 1
+
+
+    ###- debug: var=fault_no_valid_host.stdout_lines
+    #- debug: var=fault_no_valid_host.stdout_lines.1.split("', '")
+    ###- debug: var=fault_no_valid_host.stdout_lines.1.split("Filter results{{':'}} ").1.split("', '")
+    ###- debug: var=fault_no_valid_host.stdout_lines.1.split("Filter results{{':'}} ").1.split("', '")[-1]
+    #- debug: var=fault_no_valid_host.stdout_lines.1.split("Filter results{{':'}} ").1.split("', '")[-1].split(":")[0]
+
+   ### If RetryFilter, do this... 
+   ### If RamFilter, do this...
+   ### If CoreFilter, do this...
+
+    - local_action: template src=templates/nova-trace-analyze.j2 dest={{result_dir}}/nova-trace-analyze-{{nova_instance}}.log
+      become: false
 

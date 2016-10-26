@@ -1,0 +1,13 @@
+{% if hostvars[groups['controller'][0]].nova_instance_fault is defined %}
+Nova Instance Fault Detected 
+
+{% if hostvars['localhost'].fault_no_valid_host.skipped is not defined %}
+No valid host was found
+
+   Failed filter is: {{ hostvars['localhost'].failed_filter }}
+
+   Full filter output is: {{ hostvars['localhost'].host_filter_log }}
+    
+{% endif %}
+{% endif %}
+
