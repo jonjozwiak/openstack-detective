@@ -16,10 +16,10 @@ become: "True"
 ```
 * Execute the checks 
 ```
-ansible-playbook -i hosts site.yml
+ansible-playbook -i hosts healthcheck.yml
 # Example of executing only rabbitmq checks and creating a report
-#ansible-playbook -i hosts site.yml --tags='rabbitmq,report'
-#ansible-playbook -i hosts site.yml --tags='glance_backend,report'
+#ansible-playbook -i hosts healthcheck.yml --tags='rabbitmq,report'
+#ansible-playbook -i hosts healthcheck.yml --tags='glance_backend,report'
 ```
 * View results 
 Results will be written to results/config_report.log unless you change the group_vars/all result_dir variable
