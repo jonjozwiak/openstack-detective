@@ -1,0 +1,5 @@
+---
+- name: Run process checks
+  include: process-checks.yml
+  tags:
+    - process

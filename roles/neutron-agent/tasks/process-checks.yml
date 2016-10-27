@@ -1,0 +1,10 @@
+# systemctl list-unit-files
+# ### Check for enabled if non-pacemaker.  Disabled if pacemaker?
+# ### That actually won't work with the *HA light* config
+
+- name: Check that neutron-openvswitch-agent is running
+  shell: systemctl status neutron-openvswitch-agent.service | head -5 
+  register: neutron_openvswitch_agent_running
+  failed_when: "'dead' in '{{ neutron_openvswitch_agent_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
