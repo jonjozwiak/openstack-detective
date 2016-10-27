@@ -1,0 +1,328 @@
+# Playbook to trace packet flow of an instance
+# Usage: Inspect traffic along packet route for an instance
+# ansible-playbook neutron-packet-flow.yml -i hosts -e nova_instance=<uuid>
+# View output at results/neutron-packet-flow-<uuid>.log
+#
+# To skip the debug flag check:
+# ansible-playbook nova-trace-logs.yml -i hosts -e nova_instance=<uuid> -e force_debug_logs=false
+# NOTE: You won't see full details of the instance without debug logs on.  But you have the option to check first without enabling them...
+
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Fail if nova_instance not set
+      fail: msg="You must set a nova_instance variable to execute this playbook"
+      when: "nova_instance is undefined"
+      changed_when: no
+
+- hosts: controller
+  name: Controller Checks
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  tags:
+    - controller
+  vars:
+    os_cli_opts: "--os-username={{ os_admin_username }} --os-password={{ os_admin_password }} --os-auth-url={{ os_auth_url }} --os-project-name={{ os_admin_project_name}}"
+
+  tasks:
+    - name: Controller | Find hypervisor the instance is on
+      shell: openstack {{ os_cli_opts }} server show {{ nova_instance }} --column OS-EXT-SRV-ATTR:hypervisor_hostname --format=value
+      register: nova_hypervisor
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Controller | hypervisor
+      debug: 
+        var: nova_hypervisor.stdout
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Controller | Set hypervisor fact
+      set_fact:
+        nova_hypervisor: "{{ nova_hypervisor.stdout }}"
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: hostvars[inventory_hostname].nova_hypervisor
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+- hosts: compute
+  name: Compute Checks
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  tags:
+    - compute
+  vars:
+    os_cli_opts: "--os-username={{ os_admin_username }} --os-password={{ os_admin_password }} --os-auth-url={{ os_auth_url }} --os-project-name={{ os_admin_project_name}}"
+  tasks: 
+    - debug: 
+        var: hostvars[groups['controller'][0]].nova_hypervisor
+        verbosity: 1
+
+    - name: Compute | Collect Neutron port id 
+      command: neutron {{ os_cli_opts }} port-list --device_id={{ nova_instance }} --format value --column id
+      register: port_id
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Set short port id fact
+      set_fact:
+        short_port_id: "{{ port_id.stdout.split('-').0 + '-' + port_id.stdout.split('-').1.0 + port_id.stdout.split('-').1.1 }}"
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: short_port_id
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Install tcpdump
+      yum:
+        name: tcpdump
+        state: present
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Inspect tap interface
+      command: timeout 5s tcpdump -eni tap{{ short_port_id }} port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_tap
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: tcpdump_tap.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Inspect qbr interface
+      command: timeout 5s tcpdump -eni qbr{{ short_port_id }} port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_qbr
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: tcpdump_qbr.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Inspect qvb interface
+      command: timeout 5s tcpdump -eni qvb{{ short_port_id }} port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_qvb
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: tcpdump_qvb.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Inspect qvo interface
+      command: timeout 5s tcpdump -eni qvo{{ short_port_id }} port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_qvo
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: tcpdump_qvo.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Inspect vxlan interface
+      command: timeout 5s tcpdump -eni vxlan_sys_4789 port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_vxlan
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: tcpdump_vxlan.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Inspect tunnel interface
+      command: timeout 5s tcpdump -eni {{ tunnel_interface }} port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_tunnel
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: tcpdump_tunnel.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - name: Compute | Inspect packet flows
+      shell: for i in {1..10}; do ovs-ofctl dump-flows br-tun | head -n 2; sleep 1; done
+      ignore_errors: true
+      register: tcpdump_flows
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+    - debug:
+        var: tcpdump_flows.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor }}"
+
+- hosts: network
+  name: Network Checks
+  remote_user: "{{ remote_user }}"
+  become: "{{ become }}"
+  tags:
+    - network
+  vars:
+    os_cli_opts: "--os-username={{ os_admin_username }} --os-password={{ os_admin_password }} --os-auth-url={{ os_auth_url }} --os-project-name={{ os_admin_project_name}}"
+
+  tasks:
+    - name: Networker | Install tcpdump
+      yum:
+        name: tcpdump
+        state: present
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Inspect packet flows
+      shell: for i in {1..10}; do ovs-ofctl dump-flows br-tun | head -n 2; sleep 1; done
+      ignore_errors: true
+      register: tcpdump_flows
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: tcpdump_flows.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Inspect tunnel interface
+      command: timeout 5s tcpdump -eni {{ tunnel_interface }} port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_tunnel
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: tcpdump_tunnel.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Inspect vxlan interface
+      command: timeout 5s tcpdump -eni vxlan_sys_4789 port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_vxlan
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: tcpdump_vxlan.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Find instance project id
+      command: openstack {{ os_cli_opts }} server show {{ nova_instance }} --column project_id --format value
+      register: project_id
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Gather routers
+      command: openstack {{ os_cli_opts}} router list -c ID -f value
+      register: router_list
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Gather router details
+      command: openstack {{ os_cli_opts}} router show {{ item }}
+      with_items: "{{ router_list.stdout_lines }}"
+      register: router_show
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: router_show
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Find router for instance project
+      set_fact:
+        router: "{{ item.item }}"
+      when: 
+        - "{{ project_id.stdout in item.stdout }}"
+        - "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+      with_items: "{{ router_show.results }}"
+
+    - debug:
+        var: router
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Gather dhcp ports
+      command: openstack {{ os_cli_opts}} port list --device-owner network:dhcp --column ID --format value
+      register: dhcp_list
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: dhcp_list.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+      
+    - name: Networker | Gather router details
+      command: openstack {{ os_cli_opts}} port show {{ item }}
+      with_items: "{{ dhcp_list.stdout_lines }}"
+      register: dhcp_show
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: dhcp_show
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Find DHCP ID for instance project
+      set_fact:
+        dhcp_port_id: "{{ item.item }}"
+      when: 
+        - "{{ project_id.stdout in item.stdout }}"
+        - "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+      with_items: "{{ dhcp_show.results }}"
+
+    - name: Networker | Find Network ID for DHCP
+      command: openstack {{ os_cli_opts }} port show {{ dhcp_port_id }} --column network_id --format value
+      register: dhcp_network_id
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: dhcp_network_id.stdout
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Set DHCP ID
+      set_fact:
+        dhcp: "{{ dhcp_network_id.stdout }}"
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Test router namespace
+      command: ip netns exec qrouter-{{ router }} ip a
+      register: router_namespace
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: router_namespace.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Test DHCP namespace
+      command: ip netns exec qdhcp-{{ dhcp }} ip a
+      register: dhcp_namespace
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: dhcp_namespace.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Set short DHCP port id fact
+      set_fact:
+        short_dhcp_port_id: "{{ dhcp_port_id.split('-').0 + '-' + dhcp_port_id.split('-').1.0 + dhcp_port_id.split('-').1.1 }}"
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - name: Networker | Inspect tap interface in network namespace
+      command: ip netns exec qdhcp-{{ dhcp }} timeout 5s tcpdump -leni tap{{ short_dhcp_port_id }} port bootpc or port bootps
+      ignore_errors: true
+      register: tcpdump_ns_tap
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+    - debug:
+        var: tcpdump_ns_tap.stdout_lines
+        verbosity: 1
+      when: "{{ hostvars[inventory_hostname].ansible_fqdn == hostvars[groups['controller'][0]].ansible_fqdn }}"
+
+- hosts: localhost
+  name: Generating report
+  tags:
+    - report
+  tasks:
+    - local_action: template src=templates/neutron-packet-flow.log.j2 dest={{result_dir}}/neutron-packet-flow-{{nova_instance}}.log

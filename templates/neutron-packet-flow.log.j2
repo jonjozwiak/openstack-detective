@@ -1,0 +1,48 @@
+----------------------------------------------------------
+----------------------------------------------------------
+| Neutron Packet Flow Report Date: {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+----------------------------------------------------------
+----------------------------------------------------------
+
+----------------------------------------------------------
+| Data collected for host : {{ hostvars[groups['controller'].0].ansible_fqdn }}
+----------------------------------------------------------
+
+{{ hostvars[groups['controller'].0].nova_hypervisor }}
+
+{% for host in groups['compute'] %}
+{% if hostvars[host].ansible_fqdn == hostvars[groups['controller'][0]].nova_hypervisor %}"
+----------------------------------------------------------
+| Packet Flow for Compute host : {{ host }}
+----------------------------------------------------------
+{{ hostvars[host].port_id }}
+{{ hostvars[host].tcpdump_tap.stdout_lines }}
+{{ hostvars[host].tcpdump_qbr.stdout_lines }}
+{{ hostvars[host].tcpdump_qvb.stdout_lines }}
+{{ hostvars[host].tcpdump_qvo.stdout_lines }}
+{{ hostvars[host].tcpdump_vxlan.stdout_lines }}
+{{ hostvars[host].tcpdump_tunnel.stdout_lines }}
+{{ hostvars[host].tcpdump_flows.stdout_lines }}
+
+{% endif %}
+{% endfor %}
+
+{% for host in groups['network'] %}
+----------------------------------------------------------
+| Packet Flow for Network host : {{ host }}
+----------------------------------------------------------
+
+{{ hostvars[host].tcpdump_flows.stdout_lines }}
+{{ hostvars[host].tcpdump_tunnel.stdout_lines }}
+{{ hostvars[host].tcpdump_vxlan.stdout_lines }}
+{{ hostvars[host].project_id.stdout }}
+{{ hostvars[host].router_list.stdout_lines }}
+{{ hostvars[host].router }}
+{{ hostvars[host].dhcp_list }}
+{{ hostvars[host].dhcp_port_id }}
+{{ hostvars[host].dhcp_network_id.stdout }}
+{{ hostvars[host].router_namespace.stdout_lines }}
+{{ hostvars[host].dhcp_namespace.stdout_lines }}
+{{ hostvars[host].tcpdump_ns_tap.stdout_lines }}
+
+{% endfor %}
