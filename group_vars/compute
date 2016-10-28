@@ -54,4 +54,7 @@ compute_checks:
     nova_neutron_keystone_endpoint_response:
         url: ""
         detail: "Nova has neutron's endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
-
+    #### Neutron ####
+    neutron_openvswitch_agent_running:
+        url: "none"
+        detail: "neutron-openvswitch-agent is not running"

@@ -15,7 +15,7 @@
   roles:
     - common
     - nova-compute
-      #- { role: neutron-agent, tags: 'neutron-agent' }
+    - { role: neutron-agent, tags: 'neutron-agent' }
 
 
 - hosts: localhost
