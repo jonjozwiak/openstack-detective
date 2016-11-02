@@ -55,7 +55,7 @@ controller_checks:
         detail: "Glance endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
     glance_backend_supported:
         url: ""
-        details: "The default store defined in /etc/glance/glance-api.conf is not setup for checking with this script or is invalid."
+        detail: "The default store defined in /etc/glance/glance-api.conf is not setup for checking with this script or is invalid."
     #### NOVA CONTROLLER / COMPUTE ####
     nova_api_running:
         url: "none"
