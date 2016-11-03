@@ -1,8 +1,8 @@
 ---
 # vi:syntax=yaml
-remote_user: "heat-admin"
-become: "True"
-result_dir: "{{inventory_dir}}/results"
+#remote_user: "heat-admin"
+#become: "True"
+#result_dir: "{{inventory_dir}}/results"
 #result_dir: "/home/stack/"
 
 controller_checks:
