@@ -1,0 +1,51 @@
+---
+#
+# Checks for Cinder Backends 
+# 
+
+- name: Find all configured stores 
+  shell: openstack-config --get /etc/cinder/cinder.conf DEFAULT enabled_backends
+  register: cinder_enabled_backends
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - cinder_backend
+
+- name: Display cinder enabled_backends value 
+  debug:
+    msg: "Cinder enabled_backends is {{ cinder_enabled_backends }}"
+    verbosity: 1
+
+- name: Find if a single backend is configured
+  shell: openstack-config --get /etc/cinder/cinder.conf DEFAULT volume_backend_name
+  register: cinder_volume_backend
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - cinder_backend
+
+- name: Find volume drivers from Cinder enabled backends
+  shell: openstack-config --get /etc/cinder/cinder.conf {{ item }} volume_driver
+  with_items:
+    - "{{ cinder_enabled_backends.stdout.split(',') }}"
+  register: cinder_enabled_volume_backend_drivers
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - cinder_backend
+
+- name: Display cinder_enabled_volume_backend_drivers value
+  debug:
+    msg: "cinder_enabled_volume_backend_drivers is {{ cinder_enabled_volume_backend_drivers }}"
+    verbosity: 1
+
+- name: Iterate over Cinder enabled backends
+  include: backend_loop.yml
+  with_items: 
+    - "{{ cinder_enabled_volume_backend_drivers.results }}"
+  changed_when: no
+  ignore_errors: yes
+  tags:
+    - cinder_backend
+
+

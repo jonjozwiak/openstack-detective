@@ -1,0 +1,78 @@
+# Check for user setup in keystone 
+
+# Get Cinder Keystone variables 
+# For Newton and later:
+# username:        openstack-config --get /etc/cinder/cinder.conf keystone_authtoken username
+# password:    openstack-config --get /etc/cinder/cinder.conf keystone_authtoken password
+# project_name: openstack-config --get /etc/cinder/cinder.conf keystone_authtoken project_name
+# For earlier releases:
+# admin_user:        openstack-config --get /etc/cinder/cinder.conf keystone_authtoken admin_user
+# admin_password:    openstack-config --get /etc/cinder/cinder.conf keystone_authtoken admin_password
+# admin_tenant_name: openstack-config --get /etc/cinder/cinder.conf keystone_authtoken admin_tenant_name
+# auth_uri:          openstack-config --get /etc/cinder/cinder.conf keystone_authtoken auth_uri
+# identity_uri:      openstack-config --get /etc/cinder/cinder.conf keystone_authtoken identity_uri
+
+- name: Set Legacy keystone values
+  set_fact:
+    username: 'admin_user'
+    password: 'admin_password'
+    project_name: 'admin_tenant_name'
+  when: openstack_release in openstack_legacy_releases
+
+- name: Set keystone values
+  set_fact:
+    username: 'username'
+    password: 'password'
+    project_name: 'project_name'
+  when: openstack_release not in openstack_legacy_releases
+
+- name: Get Cinder Keystone admin User
+  shell: openstack-config --get /etc/cinder/cinder.conf keystone_authtoken {{ username }}
+  register: cinder_keystone_username
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder Keystone admin Password
+  shell: openstack-config --get /etc/cinder/cinder.conf keystone_authtoken {{ password }}
+  register: cinder_keystone_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder Keystone admin Tenant
+  shell: openstack-config --get /etc/cinder/cinder.conf keystone_authtoken {{ project_name }}
+  register: cinder_keystone_project_name
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder Keystone auth_uri
+  shell: openstack-config --get /etc/cinder/cinder.conf keystone_authtoken auth_uri
+  register: cinder_keystone_auth_uri
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder Keystone identity_uri
+  shell: openstack-config --get /etc/cinder/cinder.conf keystone_authtoken identity_uri
+  register: cinder_keystone_identity_uri
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check cinder keystone token get 
+  shell: openstack --os-username={{cinder_keystone_username.stdout}} --os-password={{cinder_keystone_password.stdout}} --os-project-name={{cinder_keystone_project_name.stdout}} --os-auth-url={{cinder_keystone_auth_uri.stdout}} token issue
+  register: cinder_keystone_token_issue
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder keystone endpoint 
+  shell: openstack --os-username={{cinder_keystone_username.stdout}} --os-password={{cinder_keystone_password.stdout}} --os-project-name={{cinder_keystone_project_name.stdout}} --os-auth-url={{cinder_keystone_auth_uri.stdout}} endpoint show volumev2 | grep public | awk '{print $4}'
+  register: cinder_keystone_endpoint
+  failed_when: "{{ cinder_keystone_endpoint.rc }} != 0"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check Cinder keystone endpoint 
+  shell: curl -k {{ cinder_keystone_endpoint.stdout.split('/v').0 }}
+  register: cinder_keystone_endpoint_response
+  failed_when: "{{ cinder_keystone_endpoint_response.rc  }} != 0"
+  changed_when: no
+  ignore_errors: yes
+

@@ -1,0 +1,61 @@
+- name: Get Cinder DB connection string
+  shell: openstack-config --get /etc/cinder/cinder.conf database connection
+  register: cinder_db
+  changed_when: no
+  ignore_errors: yes
+
+- name: Cinder DB string Blank
+  fail: msg="Cinder DB string is blank"
+  when: "'{{ cinder_db.stdout }}' == ''"
+  register: cinder_db_blank
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder DB User
+  shell: openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/mysql+pymysql:\/\///;s/mysql:\/\///;s/:.*//'
+  register: cinder_db_user
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder DB Password
+  shell: openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/@.*//;s/.*:.*://'
+  register: cinder_db_password
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder DB Host
+  shell: openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/.*@//;s/\/.*//'
+  register: cinder_db_host
+  changed_when: no
+  ignore_errors: yes
+
+- name: Get Cinder DB Name
+  shell: openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/.*@//;s/.*\///' | awk -F "?" '{print $1}'
+  register: cinder_db_dbname
+  changed_when: no
+  ignore_errors: yes
+
+#user:      openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/mysql:\/\///;s/:.*//'
+#password:  openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/@.*//;s/.*:.*://'
+#host:      openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/.*@//;s/\/.*//'
+#database:  openstack-config --get /etc/cinder/cinder.conf database connection | sed 's/.*@//;s/.*\///'
+
+- name: Check DB Connection
+  shell: mysql -e 'SHOW TABLES;' -D'{{ cinder_db_dbname.stdout }}' -h'{{ cinder_db_host.stdout }}' -u'{{ cinder_db_user.stdout }}' -p'{{ cinder_db_password.stdout }}'
+  register: cinder_db_connection
+  failed_when: "{{ cinder_db_connection.rc }} != 0" 
+  changed_when: no 
+  ignore_errors: yes
+
+- name: Check for empty DB
+  shell: mysql -e 'SHOW TABLES;' -D'{{ cinder_db_dbname.stdout }}' -h'{{ cinder_db_host.stdout }}' -u'{{ cinder_db_user.stdout }}' -p'{{ cinder_db_password.stdout }}'
+  register: cinder_db_empty
+  when: "{{ cinder_db_connection.rc }} == 0"
+  failed_when: "'{{ cinder_db_empty.stdout }}' == ''"
+  changed_when: no
+  ignore_errors: yes
+
+# Check for necessary grants to access DB --> This should be done in mysql check?  If I don't have the grant, my connection will fail.... 
+# ### How to check this if cinder isn't running on same host as mysql?  
+#
+#

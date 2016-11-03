@@ -1,0 +1,34 @@
+# systemctl list-unit-files
+# ### Check for enabled if non-pacemaker.  Disabled if pacemaker?
+# ### That actually won't work with the *HA light* config
+
+- name: Check that cinder-api is running
+  shell: systemctl status openstack-cinder-api | head -5 
+  register: cinder_api_running
+  failed_when: "'dead' in '{{ cinder_api_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that cinder-scheduler is running
+  shell: systemctl status openstack-cinder-scheduler | head -5 
+  register: cinder_scheduler_running
+  failed_when: "'dead' in '{{ cinder_scheduler_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+- name: Check that cinder-volume is running
+  shell: systemctl status openstack-cinder-volume | head -5
+  register: cinder_volume_running
+  failed_when: "'dead' in '{{ cinder_volume_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+### NOTE - In HA, how to check cinder-volume running on only 1 node?
+
+- name: Check that cinder-backup is running
+  shell: systemctl status openstack-cinder-backup | head -5
+  register: cinder_backup_running
+  failed_when: "'dead' in '{{ cinder_backup_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+

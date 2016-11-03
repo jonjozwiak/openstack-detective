@@ -154,3 +154,47 @@ controller_checks:
     neutron_keystone_endpoint_response:
         url: ""
         detail: "neutron endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
+    #### CINDER ####
+    cinder_api_running:
+        url: "none"
+        detail: "cinder-api is not running"
+    cinder_scheduler_running:
+        url: "none"
+        detail: "cinder-scheduler is not running"
+    cinder_volume_running:
+        url: "none"
+        detail: "cinder-volume is not running"
+    cinder_backup_running:
+        url: "none"
+        detail: "cinder-backup is not running"
+    cinder_db_connection:
+        url: ""
+        detail: "Connection to cinder DB Failed.  Check Login credentials in /etc/cinder/cinder.conf"
+    cinder_db_empty:
+        url: "none"
+        detail: "Connection to cinder DB working, but the database has no tables.  Run 'cinder-manage db_sync' to populate database"
+    cinder_rabbit_user_blank:
+        url: ""
+        detail: "There is no rabbitmq_userid specified in /etc/cinder/cinder.conf"
+    cinder_rabbit_password_blank:
+        url: ""
+        detail: "There is no rabbit_password specified in /etc/cinder/cinder.conf"
+    cinder_rabbit_hosts_blank:
+        url: ""
+        detail: "Both rabbit_host and rabbit_hosts are blank.  Check /etc/cinder/cinder.conf"
+    cinder_rabbit_hosts_connection:
+        url: ""
+        detail: "cinder - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/cinder/cinder.conf for rabbit_hosts, rabbit_userid, and rabbit_password"
+    cinder_rabbit_host_connection:
+        url: ""
+        detail: "cinder - Connection to RabbitMQ Failed.  Check RabbitMQ as well as entries for rabbit in /etc/cinder/cinder.conf for rabbit_host, rabbit_port, rabbit_userid, and rabbit_password"
+    cinder_keystone_token_issue:
+        url: ""
+        detail: "cinder API authentication to keystone failed.  Check /etc/cinder/cinder.conf and keystone"
+    cinder_keystone_endpoint:
+        url: ""
+        detail: "cinder endpoint not found in Keystone.  This may be due to keystone auth failing or may be the endpoint was never created."
+    cinder_keystone_endpoint_response:
+        url: ""
+        detail: "cinder endpoint defined, but it cannot be reached.  Is it responding?  Is there a firewall blocking the port?"
+

@@ -1,0 +1,28 @@
+---
+#
+# Run backend check based on LVM volume driver
+#
+
+- name: Display item passed to loop
+  debug: 
+    msg: "Value passed to backend loop: {{ item }}"
+    verbosity: 1
+
+- name: Set fact to pass backend data
+  set_fact:
+    cinder_backend: "{{ item }}"
+
+- name: Display volume driver 
+  debug:
+    msg: "Cinder Backend is {{ cinder_backend }} "
+    verbosity: 1
+
+# Should this check be on a storage node instead? 
+- name: Check that target is running
+  shell: systemctl status target | head -5
+  register: cinder_lvm_target_running
+  failed_when: "'dead' in '{{ cinder_lvm_target_running.stdout }}'"
+  changed_when: no
+  ignore_errors: yes
+
+### TODO: Build out backend checks

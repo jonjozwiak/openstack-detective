@@ -1,0 +1,32 @@
+---
+#
+# Run backend check based on volume_driver
+#
+
+- name: Display item passed to loop
+  debug: 
+    msg: "Value passed to backend loop: {{ item }}"
+    verbosity: 1
+
+- name: Set fact to pass backend data
+  set_fact:
+    volume_driver: "{{ item.stdout }}"
+
+- name: Display volume driver 
+  debug:
+    msg: "Volume driver is {{ volume_driver }} "
+    verbosity: 1
+#- name: Set user to username when username is defined
+#  set_fact:
+#    nova_neutron_keystone_user: '{{ nova_neutron_keystone_username.stdout }}'
+#  when: "nova_neutron_keystone_username is defined"
+
+- name: Run Cinder LVM Backend Checks
+  include: backend_lvm_checks.yml
+  when: "'{{ volume_driver }}' == 'cinder.volume.drivers.lvm.LVMVolumeDriver'"
+
+- name: Run Cinder RBD Backend Checks
+  include: backend_rbd_checks.yml
+  when: "'{{ volume_driver }}' == 'cinder.volume.drivers.rbd.RBDDriver'"
+
+

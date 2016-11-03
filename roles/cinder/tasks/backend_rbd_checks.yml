@@ -1,0 +1,20 @@
+---
+#
+# Run backend check based on RBD volume driver
+#
+
+- name: Display item passed to loop
+  debug: 
+    msg: "Value passed to backend loop: {{ item }}"
+    verbosity: 1
+
+- name: Set fact to pass backend data
+  set_fact:
+    cinder_backend: "{{ item }}"
+
+- name: Display volume driver 
+  debug:
+    msg: "Cinder Backend is {{ cinder_backend }} "
+    verbosity: 1
+
+### TODO: Build out backend checks

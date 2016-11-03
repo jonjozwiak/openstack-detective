@@ -1,0 +1,42 @@
+---
+#
+# Checks for Cinder Image Service 
+# 
+
+# Check for iptables rules
+
+- name: Run Cinder process checks
+  include: process-checks.yml
+  tags:
+    - process
+    - cinder-process
+    - cinder
+
+- name: Run Cinder Database Checks
+  include: db-checks.yml
+  tags: 
+    - db
+    - cinder-db
+    - cinder
+
+- name: Run Cinder RabbitMQ Checks
+  include: rabbitmq-checks.yml
+  tags:
+    - rabbitmq
+    - cinder-rabbitmq
+    - cinder
+
+- name: Run Cinder Keystone Checks
+  include: keystone-checks.yml
+  tags:
+    - keystoneauth
+    - cinder-keystoneauth
+    - cinder
+
+- name: Run Cinder Backend Checks
+  include: backend.yml
+  tags:
+    - cinder_backend
+    - cinder
+
+
